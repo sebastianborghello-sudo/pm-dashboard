@@ -50,12 +50,16 @@ exports.handler = async () => {
     ]);
 
     const projects = {};
+    const projectIdToKey = {}; // recId -> "macro_lan"
+
 
     // Projects: Primary field = Project Key ✅
     for (const p of projectsRec) {
       const pf = p.fields || {};
       const key = pf["Project Key"];
       if (!key) continue;
+      projectIdToKey[p.id] = key;
+
 
       projects[key] = {
         meta: {
