@@ -84,7 +84,8 @@ exports.handler = async () => {
     for (const t of tasksRec) {
       const tf = t.fields || {};
       const proj = tf["Project"];
-      const projectKey = Array.isArray(proj) ? proj[0] : proj;
+const linkedId = Array.isArray(proj) ? proj[0] : proj;
+const projectKey = projectIdToKey[linkedId] || linkedId; // <-- clave
       if (!projectKey || !projects[projectKey]) continue;
 
       projects[projectKey].tasks.push({
@@ -102,7 +103,8 @@ exports.handler = async () => {
     for (const m of teamRec) {
       const mf = m.fields || {};
       const proj = mf["Project"];
-      const projectKey = Array.isArray(proj) ? proj[0] : proj;
+const linkedId = Array.isArray(proj) ? proj[0] : proj;
+const projectKey = projectIdToKey[linkedId] || linkedId;
       if (!projectKey || !projects[projectKey]) continue;
 
       projects[projectKey].team.push({
@@ -115,7 +117,8 @@ exports.handler = async () => {
     for (const c of criticalRec) {
       const cf = c.fields || {};
       const proj = cf["Project"];
-      const projectKey = Array.isArray(proj) ? proj[0] : proj;
+const linkedId = Array.isArray(proj) ? proj[0] : proj;
+const projectKey = projectIdToKey[linkedId] || linkedId;
       if (!projectKey || !projects[projectKey]) continue;
 
       projects[projectKey].critical.push(cf["Text"] || "");
