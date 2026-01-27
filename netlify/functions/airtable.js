@@ -1,4 +1,4 @@
-export default async (req) => {
+exports.handler = async () => {
   try {
     const BASE_ID = process.env.AIRTABLE_BASE_ID;
     const TOKEN = process.env.AIRTABLE_TOKEN;
@@ -9,7 +9,10 @@ export default async (req) => {
     const TABLE_CRITICAL = "Critical";
 
     if (!BASE_ID || !TOKEN) {
-      return new Response(JSON.stringify({ error: "Missing env vars" }), { status: 500 });
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: "Missing env vars AIRTABLE_BASE_ID / AIRTABLE_TOKEN" }),
+      };
     }
 
     const api = (table) =>
@@ -24,15 +27,18 @@ export default async (req) => {
         const r = await fetch(url, {
           headers: { Authorization: `Bearer ${TOKEN}` },
         });
+
         if (!r.ok) {
           const t = await r.text();
           throw new Error(`Airtable error ${table}: ${r.status} ${t}`);
         }
+
         const data = await r.json();
         out = out.concat(data.records || []);
         if (!data.offset) break;
         offset = data.offset;
       }
+
       return out;
     }
 
@@ -43,14 +49,11 @@ export default async (req) => {
       fetchAll(TABLE_CRITICAL),
     ]);
 
-    // Helper: tomar campos con fallback
-    const f = (rec) => rec.fields || {};
-
-    // Construir projects{key: {...}}
     const projects = {};
 
+    // Projects: Primary field = Project Key ✅
     for (const p of projectsRec) {
-      const pf = f(p);
+      const pf = p.fields || {};
       const key = pf["Project Key"];
       if (!key) continue;
 
@@ -73,15 +76,11 @@ export default async (req) => {
       };
     }
 
-    // Tasks: el campo "Project" en Airtable (link) devuelve array de nombres (por default).
-    // Nosotros lo haremos matchear contra Project Key. Para eso, en tu base:
-    // - Asegurate que el Primary field de Projects sea "Project Key" (ideal),
-    //   o que el valor linkeado coincida con el Project Key.
+    // Tasks / Team / Critical: el link "Project" devuelve ["macro_lan"] porque el primary field es Project Key ✅
     for (const t of tasksRec) {
-      const tf = f(t);
+      const tf = t.fields || {};
       const proj = tf["Project"];
       const projectKey = Array.isArray(proj) ? proj[0] : proj;
-
       if (!projectKey || !projects[projectKey]) continue;
 
       projects[projectKey].tasks.push({
@@ -97,10 +96,9 @@ export default async (req) => {
     }
 
     for (const m of teamRec) {
-      const mf = f(m);
+      const mf = m.fields || {};
       const proj = mf["Project"];
       const projectKey = Array.isArray(proj) ? proj[0] : proj;
-
       if (!projectKey || !projects[projectKey]) continue;
 
       projects[projectKey].team.push({
@@ -111,20 +109,20 @@ export default async (req) => {
     }
 
     for (const c of criticalRec) {
-      const cf = f(c);
+      const cf = c.fields || {};
       const proj = cf["Project"];
       const projectKey = Array.isArray(proj) ? proj[0] : proj;
-
       if (!projectKey || !projects[projectKey]) continue;
 
       projects[projectKey].critical.push(cf["Text"] || "");
     }
 
-    return new Response(JSON.stringify({ projects }), {
-      status: 200,
+    return {
+      statusCode: 200,
       headers: { "Content-Type": "application/json" },
-    });
+      body: JSON.stringify({ projects }),
+    };
   } catch (e) {
-    return new Response(JSON.stringify({ error: String(e) }), { status: 500 });
+    return { statusCode: 500, body: JSON.stringify({ error: String(e) }) };
   }
 };
