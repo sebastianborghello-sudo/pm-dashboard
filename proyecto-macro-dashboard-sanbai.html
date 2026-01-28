@@ -178,6 +178,13 @@
       letter-spacing: 0.10em;
     }
 
+    .stat-sub {
+      margin-top: 8px;
+      color: #344054;
+      font-size: 0.92rem;
+      line-height: 1.35;
+    }
+
     /* ===== Sections ===== */
     .section {
       padding: 20px;
@@ -190,6 +197,7 @@
       justify-content: space-between;
       gap: 12px;
       margin-bottom: 14px;
+      flex-wrap: wrap;
     }
 
     .section-title h2 {
@@ -445,6 +453,22 @@
       background: #FAFAFB;
     }
 
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 0.85rem;
+      border: 1px solid rgba(0,0,0,0.08);
+      background: #fff;
+      white-space: nowrap;
+    }
+    .pill.ok { color: var(--success); border-color: rgba(22,163,74,0.25); }
+    .pill.warn { color: #B45309; border-color: rgba(245,158,11,0.35); }
+    .pill.info { color: var(--info); border-color: rgba(37,99,235,0.25); }
+
     /* ===== Footer Objective ===== */
     .objective {
       background: var(--ink);
@@ -499,23 +523,49 @@
             <span class="badge info"><i class="fa-solid fa-calendar-days"></i> 01/03/2026 – 01/03/2029</span>
             <span class="badge warning"><i class="fa-solid fa-dollar-sign"></i> USD 1.190.682,80</span>
           </div>
-          <div class="submeta"><i class="fa-solid fa-clock-rotate-left"></i>Última actualización: <strong id="lastUpdated">27/01/2026</strong></div>
+
+          <!-- ✅ ÚLTIMA ACTUALIZACIÓN AUTOMÁTICA -->
+          <div class="submeta"><i class="fa-solid fa-clock-rotate-left"></i>Última actualización: <strong id="lastUpdated">--/--/----</strong></div>
         </div>
       </div>
     </div>
 
-    <!-- KPI / Snapshot -->
+    <!-- KPI / Snapshot (ajustado) -->
     <div class="grid stats-grid">
       <div class="card stat-card">
         <div class="stat-icon"><i class="fa-solid fa-network-wired"></i></div>
-        <div class="stat-value">170</div>
-        <div class="stat-label">Switches totales</div>
+        <div class="stat-value">210</div>
+        <div class="stat-label">Switches totales (estimado por arquitectura)</div>
+        <div class="stat-sub">
+          <strong>170</strong> acceso + <strong>40</strong> (Core/DC/DMZ/OOB)
+        </div>
       </div>
 
       <div class="card stat-card">
-        <div class="stat-icon"><i class="fa-solid fa-clock"></i></div>
-        <div class="stat-value">~4</div>
-        <div class="stat-label">Meses estimados (alto nivel)</div>
+        <div class="stat-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
+        <div class="stat-value">USD 743.770,34</div>
+        <div class="stat-label">OC comprometidas (Intermaco)</div>
+        <div class="stat-sub">
+          OC 00010 (equipamiento) + OC 00012 (servicios)
+        </div>
+      </div>
+
+      <div class="card stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+        <div class="stat-value">USD 73.250</div>
+        <div class="stat-label">Implementación (Qualix)</div>
+        <div class="stat-sub">
+          Instalación y configuración • Valores sin IVA
+        </div>
+      </div>
+
+      <div class="card stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-shield-halved"></i></div>
+        <div class="stat-value">USD 151.200</div>
+        <div class="stat-label">Soporte (36 meses)</div>
+        <div class="stat-sub">
+          Contrato 36 meses • Pago anual adelantado
+        </div>
       </div>
 
       <div class="card stat-card">
@@ -537,19 +587,22 @@
       </div>
 
       <div class="card stat-card">
-        <div class="stat-icon"><i class="fa-solid fa-shield-halved"></i></div>
-        <div class="stat-value">24/7</div>
-        <div class="stat-label">Soporte premium</div>
+        <div class="stat-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <div class="stat-value">USD 968.220,34</div>
+        <div class="stat-label">Compromisos (OCs + Qualix)</div>
+        <div class="stat-sub">
+          Total referencia • sin IVA (según docs)
+        </div>
       </div>
     </div>
 
-    <!-- Alcance -->
+    <!-- Alcance (ajustado con breakdown) -->
     <div class="grid scope-grid">
       <div class="card scope-card">
         <h3><i class="fa-solid fa-building"></i> Red Campus LAN</h3>
         <ul>
-          <li>170 switches de acceso S5755</li>
-          <li>2 switches Core S6780</li>
+          <li><strong>170</strong> switches de acceso S5755 (Torre)</li>
+          <li><strong>2</strong> switches Core Campus S6780</li>
           <li>Soporte PoE++ y mGig</li>
           <li>Uplinks 25G redundantes</li>
           <li>Preparado para WiFi 7</li>
@@ -559,9 +612,9 @@
       <div class="card scope-card">
         <h3><i class="fa-solid fa-server"></i> Datacenter Local</h3>
         <ul>
-          <li>2 switches Core DC S6750</li>
-          <li>6 switches ToR S6750</li>
-          <li>2 switches DMZ local</li>
+          <li><strong>2</strong> switches Core DC</li>
+          <li><strong>6</strong> switches ToR DC</li>
+          <li><strong>2</strong> switches DMZ local</li>
           <li>Stack extendido entre DCs</li>
           <li>Uplinks 100G</li>
         </ul>
@@ -570,8 +623,8 @@
       <div class="card scope-card">
         <h3><i class="fa-solid fa-shield"></i> DMZ Datacenters</h3>
         <ul>
-          <li>8 switches acceso DMZ</li>
-          <li>2 switches Core DMZ</li>
+          <li><strong>8</strong> switches acceso DMZ</li>
+          <li><strong>2</strong> switches Core DMZ</li>
           <li>Extensión DCs principales</li>
           <li>Optimización de tráfico</li>
         </ul>
@@ -580,11 +633,79 @@
       <div class="card scope-card">
         <h3><i class="fa-solid fa-diagram-project"></i> Management OOB</h3>
         <ul>
-          <li>16 switches acceso OOB</li>
-          <li>2 switches Core OOB</li>
+          <li><strong>16</strong> switches acceso OOB</li>
+          <li><strong>2</strong> switches Core OOB</li>
           <li>Red de gestión aislada</li>
           <li>Enlaces redundantes 10G/1G</li>
         </ul>
+      </div>
+    </div>
+
+    <!-- OC Comprometidas (NUEVA SECCIÓN) -->
+    <div class="card section">
+      <div class="section-title">
+        <h2><i class="fa-solid fa-file-invoice-dollar"></i>OC comprometidas y costos de servicios</h2>
+        <div class="hint">Vista ejecutiva • Montos según documentos (sin IVA)</div>
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 170px;">Tipo</th>
+              <th style="width: 190px;">Documento</th>
+              <th style="width: 210px;">Proveedor</th>
+              <th>Descripción</th>
+              <th style="width: 180px;">Monto</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="pill info"><i class="fa-solid fa-cart-shopping"></i> OC</span></td>
+              <td><strong>OC 00010</strong></td>
+              <td>Intermaco</td>
+              <td>Equipamiento LAN Torre Macro (hardware + licencias + soporte vendor/canal según BOM de la OC)</td>
+              <td><strong>USD 667.014,73</strong></td>
+            </tr>
+
+            <tr>
+              <td><span class="pill info"><i class="fa-solid fa-cart-shopping"></i> OC</span></td>
+              <td><strong>OC 00012</strong></td>
+              <td>Intermaco</td>
+              <td>Implementation Services LAN Torre Macro (servicios)</td>
+              <td><strong>USD 76.755,61</strong></td>
+            </tr>
+
+            <tr>
+              <td><span class="pill warn"><i class="fa-solid fa-screwdriver-wrench"></i> Servicios</span></td>
+              <td><strong>QLX (Comercial)</strong></td>
+              <td>Qualix</td>
+              <td>Instalación y configuración Proyecto Torre Macro (incluye: Skill Transfer + PMO según propuesta)</td>
+              <td><strong>USD 73.250,00</strong></td>
+            </tr>
+
+            <tr>
+              <td><span class="pill ok"><i class="fa-solid fa-shield-halved"></i> Soporte</span></td>
+              <td><strong>QLX (36 meses)</strong></td>
+              <td>Qualix</td>
+              <td>Soporte Q Advanced x 12 meses (contrato a 36 meses) • Pago anual adelantado</td>
+              <td><strong>USD 151.200,00</strong></td>
+            </tr>
+
+            <tr>
+              <td colspan="4"><strong>Total compromisos (OCs + Qualix)</strong></td>
+              <td><strong>USD 968.220,34</strong></td>
+            </tr>
+
+            <tr>
+              <td colspan="4">
+                <strong>Contrato total (referencia)</strong><br>
+                <span style="color:#475467;">Monto total de productos y servicios del proyecto (según anexo comercial)</span>
+              </td>
+              <td><strong>USD 1.190.682,80</strong></td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -810,13 +931,16 @@
       });
     });
 
-    // Si querés que "Última actualización" sea dinámica:
-    // (comentado para no pisar la fecha si la querés fija)
-    // const d = new Date();
-    // const dd = String(d.getDate()).padStart(2,'0');
-    // const mm = String(d.getMonth()+1).padStart(2,'0');
-    // const yyyy = d.getFullYear();
-    // document.getElementById('lastUpdated').textContent = `${dd}/${mm}/${yyyy}`;
+    // ✅ Última actualización automática (fecha local del navegador)
+    (function setAutoLastUpdated() {
+      const d = new Date();
+      const dd = String(d.getDate()).padStart(2,'0');
+      const mm = String(d.getMonth()+1).padStart(2,'0');
+      const yyyy = d.getFullYear();
+      const el = document.getElementById('lastUpdated');
+      if (el) el.textContent = `${dd}/${mm}/${yyyy}`;
+    })();
   </script>
 </body>
 </html>
+
