@@ -404,32 +404,6 @@ function loadProjectsFromStorage() {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelector('.tab[data-tab="all"]').classList.add('active');
     renderProjectMeta();
-      function toSortableDate(iso) {
-  // iso "YYYY-MM-DD" -> timestamp; si falta fecha, lo manda al final
-  if (!iso) return Number.POSITIVE_INFINITY;
-  const d = new Date(iso + "T00:00:00");
-  const t = d.getTime();
-  return Number.isFinite(t) ? t : Number.POSITIVE_INFINITY;
-}
-
-function sortTasksByDate(tasks) {
-  return [...tasks].sort((a, b) => {
-    const aStart = toSortableDate(a.startDate);
-    const bStart = toSortableDate(b.startDate);
-    if (aStart !== bStart) return aStart - bStart;
-
-    const aEnd = toSortableDate(a.endDate);
-    const bEnd = toSortableDate(b.endDate);
-    if (aEnd !== bEnd) return aEnd - bEnd;
-
-    // fallback estable: por ID o nombre
-    const aId = a.id ?? 999999;
-    const bId = b.id ?? 999999;
-    if (aId !== bId) return aId - bId;
-
-    return String(a.name || "").localeCompare(String(b.name || ""), "es");
-  });
-}
     renderTasks();
     renderGantt();
     renderTeam();
@@ -519,6 +493,32 @@ function resetStorage() {
         function init() {
             renderProjectSelector();
             renderProjectMeta();
+            function toSortableDate(iso) {
+  // iso "YYYY-MM-DD" -> timestamp; si falta fecha, lo manda al final
+  if (!iso) return Number.POSITIVE_INFINITY;
+  const d = new Date(iso + "T00:00:00");
+  const t = d.getTime();
+  return Number.isFinite(t) ? t : Number.POSITIVE_INFINITY;
+}
+
+function sortTasksByDate(tasks) {
+  return [...tasks].sort((a, b) => {
+    const aStart = toSortableDate(a.startDate);
+    const bStart = toSortableDate(b.startDate);
+    if (aStart !== bStart) return aStart - bStart;
+
+    const aEnd = toSortableDate(a.endDate);
+    const bEnd = toSortableDate(b.endDate);
+    if (aEnd !== bEnd) return aEnd - bEnd;
+
+    // fallback estable: por ID o nombre
+    const aId = a.id ?? 999999;
+    const bId = b.id ?? 999999;
+    if (aId !== bId) return aId - bId;
+
+    return String(a.name || "").localeCompare(String(b.name || ""), "es");
+  });
+}
             renderTasks();
             renderGantt();
             renderTeam();
