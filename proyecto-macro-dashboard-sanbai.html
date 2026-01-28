@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Proyecto Torre Macro - Dashboard</title>
 
-  <!-- Iconos (corporativo, consistente) -->
+  <!-- Iconos -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
   <style>
@@ -178,13 +178,6 @@
       letter-spacing: 0.10em;
     }
 
-    .stat-sub {
-      margin-top: 8px;
-      color: #344054;
-      font-size: 0.92rem;
-      line-height: 1.35;
-    }
-
     /* ===== Sections ===== */
     .section {
       padding: 20px;
@@ -197,7 +190,6 @@
       justify-content: space-between;
       gap: 12px;
       margin-bottom: 14px;
-      flex-wrap: wrap;
     }
 
     .section-title h2 {
@@ -299,9 +291,7 @@
       box-shadow: 0 0 0 4px rgba(247,107,28,0.12);
     }
 
-    .timeline-item.active::before {
-      background: var(--sanbai-orange);
-    }
+    .timeline-item.active::before { background: var(--sanbai-orange); }
 
     .timeline-content {
       background: #FAFAFB;
@@ -319,9 +309,7 @@
       gap: 10px;
     }
 
-    .timeline-title i {
-      color: var(--sanbai-orange);
-    }
+    .timeline-title i { color: var(--sanbai-orange); }
 
     .timeline-duration {
       color: var(--muted);
@@ -395,6 +383,7 @@
     .critical {
       border-left: 6px solid var(--danger);
       padding: 20px;
+      margin-bottom: 16px;
     }
 
     .critical .critical-items {
@@ -419,9 +408,7 @@
       font-size: 0.98rem;
     }
 
-    .critical-item strong i {
-      color: var(--danger);
-    }
+    .critical-item strong i { color: var(--danger); }
 
     /* ===== Table ===== */
     table {
@@ -449,25 +436,57 @@
       line-height: 1.35;
     }
 
-    tbody tr:nth-child(odd) td {
-      background: #FAFAFB;
+    tbody tr:nth-child(odd) td { background: #FAFAFB; }
+
+    /* ===== Financial Cards ===== */
+    .fin-grid {
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     }
 
+    .fin-card {
+      padding: 16px;
+    }
+
+    .fin-title {
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-weight: 900;
+      margin-bottom: 8px;
+      color: var(--ink);
+    }
+
+    .fin-title i { color: var(--sanbai-orange); }
+
+    .fin-row {
+      display:flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+      color: #344054;
+      font-size: 0.95rem;
+    }
+
+    .fin-row:last-child { border-bottom: none; }
+
+    .fin-muted { color: var(--muted); font-size: 0.9rem; margin-top: 10px; }
+
     .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
       padding: 6px 10px;
       border-radius: 999px;
-      font-weight: 800;
-      font-size: 0.85rem;
       border: 1px solid rgba(0,0,0,0.08);
       background: #fff;
+      font-weight: 800;
+      font-size: 0.85rem;
       white-space: nowrap;
     }
+
     .pill.ok { color: var(--success); border-color: rgba(22,163,74,0.25); }
     .pill.warn { color: #B45309; border-color: rgba(245,158,11,0.35); }
-    .pill.info { color: var(--info); border-color: rgba(37,99,235,0.25); }
 
     /* ===== Footer Objective ===== */
     .objective {
@@ -484,9 +503,7 @@
       gap: 10px;
     }
 
-    .objective h2 i {
-      color: var(--sanbai-orange);
-    }
+    .objective h2 i { color: var(--sanbai-orange); }
 
     .objective p {
       color: rgba(255,255,255,0.92);
@@ -523,49 +540,23 @@
             <span class="badge info"><i class="fa-solid fa-calendar-days"></i> 01/03/2026 – 01/03/2029</span>
             <span class="badge warning"><i class="fa-solid fa-dollar-sign"></i> USD 1.190.682,80</span>
           </div>
-
-          <!-- ✅ ÚLTIMA ACTUALIZACIÓN AUTOMÁTICA -->
           <div class="submeta"><i class="fa-solid fa-clock-rotate-left"></i>Última actualización: <strong id="lastUpdated">--/--/----</strong></div>
         </div>
       </div>
     </div>
 
-    <!-- KPI / Snapshot (ajustado) -->
+    <!-- KPI / Snapshot -->
     <div class="grid stats-grid">
       <div class="card stat-card">
         <div class="stat-icon"><i class="fa-solid fa-network-wired"></i></div>
-        <div class="stat-value">210</div>
-        <div class="stat-label">Switches totales (estimado por arquitectura)</div>
-        <div class="stat-sub">
-          <strong>170</strong> acceso + <strong>40</strong> (Core/DC/DMZ/OOB)
-        </div>
+        <div class="stat-value">170</div>
+        <div class="stat-label">Switches (alcance)</div>
       </div>
 
       <div class="card stat-card">
-        <div class="stat-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
-        <div class="stat-value">USD 743.770,34</div>
-        <div class="stat-label">OC comprometidas (Intermaco)</div>
-        <div class="stat-sub">
-          OC 00010 (equipamiento) + OC 00012 (servicios)
-        </div>
-      </div>
-
-      <div class="card stat-card">
-        <div class="stat-icon"><i class="fa-solid fa-screwdriver-wrench"></i></div>
-        <div class="stat-value">USD 73.250</div>
-        <div class="stat-label">Implementación (Qualix)</div>
-        <div class="stat-sub">
-          Instalación y configuración • Valores sin IVA
-        </div>
-      </div>
-
-      <div class="card stat-card">
-        <div class="stat-icon"><i class="fa-solid fa-shield-halved"></i></div>
-        <div class="stat-value">USD 151.200</div>
-        <div class="stat-label">Soporte (36 meses)</div>
-        <div class="stat-sub">
-          Contrato 36 meses • Pago anual adelantado
-        </div>
+        <div class="stat-icon"><i class="fa-solid fa-clock"></i></div>
+        <div class="stat-value">~4</div>
+        <div class="stat-label">Meses estimados (alto nivel)</div>
       </div>
 
       <div class="card stat-card">
@@ -587,22 +578,68 @@
       </div>
 
       <div class="card stat-card">
-        <div class="stat-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
-        <div class="stat-value">USD 968.220,34</div>
-        <div class="stat-label">Compromisos (OCs + Qualix)</div>
-        <div class="stat-sub">
-          Total referencia • sin IVA (según docs)
+        <div class="stat-icon"><i class="fa-solid fa-shield-halved"></i></div>
+        <div class="stat-value">24/7</div>
+        <div class="stat-label">Soporte premium</div>
+      </div>
+    </div>
+
+    <!-- Órdenes de compra comprometidas -->
+    <div class="card section">
+      <div class="section-title">
+        <h2><i class="fa-solid fa-file-invoice-dollar"></i>Órdenes de compra comprometidas (OC)</h2>
+        <div class="hint">Montos sin IVA • Base para seguimiento financiero y entregables</div>
+      </div>
+
+      <div class="grid fin-grid">
+        <div class="card fin-card">
+          <div class="fin-title"><i class="fa-solid fa-boxes-stacked"></i> OC 00010 – Equipamiento LAN</div>
+          <div class="fin-row"><span>Proveedor</span><strong>Intermaco (Huawei)</strong></div>
+          <div class="fin-row"><span>Monto total</span><strong>USD 667,014.73</strong></div>
+          <div class="fin-row"><span>Pago</span><strong>30 días FF</strong></div>
+          <div class="fin-muted">
+            <span class="pill ok"><i class="fa-solid fa-circle-check"></i> Comprometida</span>
+          </div>
+        </div>
+
+        <div class="card fin-card">
+          <div class="fin-title"><i class="fa-solid fa-screwdriver-wrench"></i> OC 00012 – Implementation Services</div>
+          <div class="fin-row"><span>Proveedor</span><strong>Intermaco</strong></div>
+          <div class="fin-row"><span>Monto total</span><strong>USD 76,755.61</strong></div>
+          <div class="fin-row"><span>Pago</span><strong>30 días FF</strong></div>
+          <div class="fin-muted">
+            <span class="pill ok"><i class="fa-solid fa-circle-check"></i> Comprometida</span>
+          </div>
+        </div>
+
+        <div class="card fin-card">
+          <div class="fin-title"><i class="fa-solid fa-headset"></i> QLX – Implementación & Soporte</div>
+          <div class="fin-row"><span>Implementación + PMO + Skill Transfer</span><strong>USD 73,250.00</strong></div>
+          <div class="fin-row"><span>Soporte reactivo (12 meses)</span><strong>USD 50,400.00</strong></div>
+          <div class="fin-row"><span>Soporte reactivo (36 meses)</span><strong>USD 151,200.00</strong></div>
+          <div class="fin-muted">
+            <span class="pill warn"><i class="fa-solid fa-triangle-exclamation"></i> A confirmar modalidad de contratación</span>
+          </div>
+        </div>
+
+        <div class="card fin-card">
+          <div class="fin-title"><i class="fa-solid fa-calculator"></i> Totales rápidos</div>
+          <div class="fin-row"><span>Total OCs (Intermaco)</span><strong id="totalIntermaco">USD --</strong></div>
+          <div class="fin-row"><span>Proyecto (propuesta base)</span><strong>USD 1,190,682.80</strong></div>
+          <div class="fin-muted">
+            <span class="pill ok"><i class="fa-solid fa-chart-line"></i> Útil para comité</span>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Alcance (ajustado con breakdown) -->
+    <!-- Alcance -->
     <div class="grid scope-grid">
       <div class="card scope-card">
         <h3><i class="fa-solid fa-building"></i> Red Campus LAN</h3>
         <ul>
-          <li><strong>170</strong> switches de acceso S5755 (Torre)</li>
-          <li><strong>2</strong> switches Core Campus S6780</li>
+          <li>Switches de acceso + agregación (alcance total: 170 switches)</li>
+          <li>Core Campus (CloudEngine)</li>
           <li>Soporte PoE++ y mGig</li>
           <li>Uplinks 25G redundantes</li>
           <li>Preparado para WiFi 7</li>
@@ -612,100 +649,34 @@
       <div class="card scope-card">
         <h3><i class="fa-solid fa-server"></i> Datacenter Local</h3>
         <ul>
-          <li><strong>2</strong> switches Core DC</li>
-          <li><strong>6</strong> switches ToR DC</li>
-          <li><strong>2</strong> switches DMZ local</li>
+          <li>Core DC + ToR (CloudEngine)</li>
           <li>Stack extendido entre DCs</li>
           <li>Uplinks 100G</li>
+          <li>Segmentación y resiliencia</li>
+          <li>Ventanas controladas</li>
         </ul>
       </div>
 
       <div class="card scope-card">
         <h3><i class="fa-solid fa-shield"></i> DMZ Datacenters</h3>
         <ul>
-          <li><strong>8</strong> switches acceso DMZ</li>
-          <li><strong>2</strong> switches Core DMZ</li>
-          <li>Extensión DCs principales</li>
+          <li>Switching DMZ (incl. core)</li>
           <li>Optimización de tráfico</li>
+          <li>Extensión DCs principales</li>
+          <li>Hardening operativo</li>
+          <li>Validación post-migración</li>
         </ul>
       </div>
 
       <div class="card scope-card">
         <h3><i class="fa-solid fa-diagram-project"></i> Management OOB</h3>
         <ul>
-          <li><strong>16</strong> switches acceso OOB</li>
-          <li><strong>2</strong> switches Core OOB</li>
           <li>Red de gestión aislada</li>
           <li>Enlaces redundantes 10G/1G</li>
+          <li>Operación segura</li>
+          <li>Monitoreo & troubleshooting</li>
+          <li>Documentación final</li>
         </ul>
-      </div>
-    </div>
-
-    <!-- OC Comprometidas (NUEVA SECCIÓN) -->
-    <div class="card section">
-      <div class="section-title">
-        <h2><i class="fa-solid fa-file-invoice-dollar"></i>OC comprometidas y costos de servicios</h2>
-        <div class="hint">Vista ejecutiva • Montos según documentos (sin IVA)</div>
-      </div>
-
-      <div style="overflow-x:auto;">
-        <table>
-          <thead>
-            <tr>
-              <th style="width: 170px;">Tipo</th>
-              <th style="width: 190px;">Documento</th>
-              <th style="width: 210px;">Proveedor</th>
-              <th>Descripción</th>
-              <th style="width: 180px;">Monto</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><span class="pill info"><i class="fa-solid fa-cart-shopping"></i> OC</span></td>
-              <td><strong>OC 00010</strong></td>
-              <td>Intermaco</td>
-              <td>Equipamiento LAN Torre Macro (hardware + licencias + soporte vendor/canal según BOM de la OC)</td>
-              <td><strong>USD 667.014,73</strong></td>
-            </tr>
-
-            <tr>
-              <td><span class="pill info"><i class="fa-solid fa-cart-shopping"></i> OC</span></td>
-              <td><strong>OC 00012</strong></td>
-              <td>Intermaco</td>
-              <td>Implementation Services LAN Torre Macro (servicios)</td>
-              <td><strong>USD 76.755,61</strong></td>
-            </tr>
-
-            <tr>
-              <td><span class="pill warn"><i class="fa-solid fa-screwdriver-wrench"></i> Servicios</span></td>
-              <td><strong>QLX (Comercial)</strong></td>
-              <td>Qualix</td>
-              <td>Instalación y configuración Proyecto Torre Macro (incluye: Skill Transfer + PMO según propuesta)</td>
-              <td><strong>USD 73.250,00</strong></td>
-            </tr>
-
-            <tr>
-              <td><span class="pill ok"><i class="fa-solid fa-shield-halved"></i> Soporte</span></td>
-              <td><strong>QLX (36 meses)</strong></td>
-              <td>Qualix</td>
-              <td>Soporte Q Advanced x 12 meses (contrato a 36 meses) • Pago anual adelantado</td>
-              <td><strong>USD 151.200,00</strong></td>
-            </tr>
-
-            <tr>
-              <td colspan="4"><strong>Total compromisos (OCs + Qualix)</strong></td>
-              <td><strong>USD 968.220,34</strong></td>
-            </tr>
-
-            <tr>
-              <td colspan="4">
-                <strong>Contrato total (referencia)</strong><br>
-                <span style="color:#475467;">Monto total de productos y servicios del proyecto (según anexo comercial)</span>
-              </td>
-              <td><strong>USD 1.190.682,80</strong></td>
-            </tr>
-          </tbody>
-        </table>
       </div>
     </div>
 
@@ -721,7 +692,7 @@
           <div class="timeline-content">
             <div class="timeline-title"><i class="fa-solid fa-plane-arrival"></i>Importación de hardware</div>
             <div class="timeline-duration">60 días (30 fab. + 30 logística)</div>
-            <div class="timeline-desc">Fabricación en Huawei + transporte aéreo + trámites aduaneros</div>
+            <div class="timeline-desc">Fabricación en Huawei + transporte + trámites de importación</div>
 
             <div class="progress-bar" aria-label="Progreso importación">
               <div class="progress-fill" data-target="80"></div>
@@ -737,7 +708,7 @@
           <div class="timeline-content">
             <div class="timeline-title"><i class="fa-solid fa-magnifying-glass"></i>Relevamiento</div>
             <div class="timeline-duration">2 semanas</div>
-            <div class="timeline-desc">Inspección física, análisis de configuraciones actuales, identificación de dependencias</div>
+            <div class="timeline-desc">Inspección física, dependencias y preparación por sitio</div>
           </div>
         </div>
 
@@ -745,7 +716,7 @@
           <div class="timeline-content">
             <div class="timeline-title"><i class="fa-solid fa-pen-ruler"></i>Diseño (HLD / LLD / NIP)</div>
             <div class="timeline-duration">6 semanas</div>
-            <div class="timeline-desc">Documentación técnica, topologías, plan de implementación y rollback</div>
+            <div class="timeline-desc">Topologías, plan de implementación y rollback</div>
           </div>
         </div>
 
@@ -766,7 +737,7 @@
           <div class="timeline-content">
             <div class="timeline-title"><i class="fa-solid fa-clipboard-check"></i>Validación y cierre</div>
             <div class="timeline-duration">4 semanas</div>
-            <div class="timeline-desc">Pruebas L2/L3, redundancia, performance, documentación final, acta de aceptación</div>
+            <div class="timeline-desc">Pruebas, documentación final y acta de aceptación</div>
           </div>
         </div>
       </div>
@@ -874,8 +845,8 @@
                 ✅ LLD y MOP<br>
                 ✅ iMaster Campus (VM + startup)<br>
                 ✅ Config. Core LAN + Core DC + ToR<br>
-                ❌ Switches DMZ (4 equipos)<br>
-                ❌ Switches de acceso Torre
+                ❌ Switches DMZ (según definición operativa)<br>
+                ❌ Switches de acceso Torre (según definición operativa)
               </td>
             </tr>
             <tr>
@@ -921,26 +892,42 @@
   </div>
 
   <script>
-    // Animación suave para barras de progreso
-    window.addEventListener('load', () => {
-      document.querySelectorAll('.progress-fill').forEach(el => {
-        const target = el.getAttribute('data-target') || '0';
-        requestAnimationFrame(() => {
-          el.style.width = target + '%';
-        });
-      });
-    });
-
-    // ✅ Última actualización automática (fecha local del navegador)
-    (function setAutoLastUpdated() {
-      const d = new Date();
+    // === Helpers ===
+    function formatARSDate(d) {
       const dd = String(d.getDate()).padStart(2,'0');
       const mm = String(d.getMonth()+1).padStart(2,'0');
       const yyyy = d.getFullYear();
+      return `${dd}/${mm}/${yyyy}`;
+    }
+
+    function formatUSD(n) {
+      // for display only
+      return "USD " + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // === Última actualización automática ===
+    (function setAutoLastUpdated() {
       const el = document.getElementById('lastUpdated');
-      if (el) el.textContent = `${dd}/${mm}/${yyyy}`;
+      if (!el) return;
+      el.textContent = formatARSDate(new Date());
     })();
+
+    // === Animación barras ===
+    window.addEventListener('load', () => {
+      document.querySelectorAll('.progress-fill').forEach(el => {
+        const target = el.getAttribute('data-target') || '0';
+        requestAnimationFrame(() => { el.style.width = target + '%'; });
+      });
+
+      // Total OCs (Intermaco): OC10 + OC12
+      const oc10 = 667014.73;
+      const oc12 = 76755.61;
+      const total = oc10 + oc12;
+      const totalEl = document.getElementById("totalIntermaco");
+      if (totalEl) totalEl.textContent = formatUSD(total);
+    });
   </script>
 </body>
 </html>
+
 
