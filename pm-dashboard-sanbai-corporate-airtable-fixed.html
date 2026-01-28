@@ -642,7 +642,7 @@ function daysBetweenUTC(a, b) {
   html += '</div></div>';
 
   // 4) Rows
-  currentProject.tasks.forEach(task => {
+sortTasksByDate(currentProject.tasks || []).forEach(task => {
     if (!task.startDate || !task.endDate) return;
 
     const taskStart = parseISODateUTC(task.startDate);
