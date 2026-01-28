@@ -493,7 +493,27 @@ function resetStorage() {
         function init() {
             renderProjectSelector();
             renderProjectMeta();
-            function toSortableDate(iso) {
+            renderTasks();
+            renderGantt();
+            renderTeam();
+            renderCritical();
+            updateMetrics();
+            
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    currentTab = this.getAttribute('data-tab');
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    renderTasks();
+                });
+            });
+
+            document.getElementById('taskForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                saveTask();
+            });
+        }
+        function toSortableDate(iso) {
   // iso "YYYY-MM-DD" -> timestamp; si falta fecha, lo manda al final
   if (!iso) return Number.POSITIVE_INFINITY;
   const d = new Date(iso + "T00:00:00");
@@ -519,26 +539,6 @@ function sortTasksByDate(tasks) {
     return String(a.name || "").localeCompare(String(b.name || ""), "es");
   });
 }
-            renderTasks();
-            renderGantt();
-            renderTeam();
-            renderCritical();
-            updateMetrics();
-            
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.addEventListener('click', function() {
-                    currentTab = this.getAttribute('data-tab');
-                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                    this.classList.add('active');
-                    renderTasks();
-                });
-            });
-
-            document.getElementById('taskForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                saveTask();
-            });
-        }
 
         function renderTasks() {
             const container = document.getElementById('tasksList');
