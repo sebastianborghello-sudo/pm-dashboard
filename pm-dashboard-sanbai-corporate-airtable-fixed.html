@@ -205,6 +205,15 @@
         }
 
     </style>
+    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<button
+  class="btn btn-white"
+  onclick="netlifyIdentity.logout()"
+  title="Cerrar sesión"
+>
+  🔒 Logout
+</button>
+
 </head>
 <body>
     <div class="top-bar">
@@ -320,6 +329,22 @@
     </div>
 
     <script>
+        if (window.netlifyIdentity) {
+  window.netlifyIdentity.on("init", user => {
+    if (!user) {
+      window.netlifyIdentity.open(); // fuerza login
+    }
+  });
+
+  window.netlifyIdentity.on("login", () => {
+    window.location.reload();
+  });
+
+  window.netlifyIdentity.on("logout", () => {
+    window.location.reload();
+  });
+}
+
     const STORAGE_KEY = "pm_projects_v1";
 
 function persistProjects() {
