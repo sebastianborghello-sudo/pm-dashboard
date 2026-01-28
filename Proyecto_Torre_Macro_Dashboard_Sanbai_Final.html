@@ -1,0 +1,150 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Proyecto Torre Macro | Sanbai Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<style>
+:root {
+  --sanbai-orange: #ff7a00;
+  --sanbai-dark: #1c1c1c;
+  --sanbai-light: #f5f5f5;
+  --ok: #16a34a;
+  --warn: #f59e0b;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: var(--sanbai-light);
+  color: var(--sanbai-dark);
+}
+
+.container {
+  max-width: 1400px;
+  margin: auto;
+  padding: 24px;
+}
+
+.header {
+  background: white;
+  border-left: 6px solid var(--sanbai-orange);
+  padding: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.logo {
+  height: 46px;
+}
+
+.badge {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.8em;
+  font-weight: bold;
+}
+
+.badge-ok { background: var(--ok); color: white; }
+
+button {
+  padding: 8px 14px;
+  margin-top: 6px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  background: white;
+  cursor: pointer;
+}
+
+button.active {
+  background: var(--sanbai-orange);
+  color: white;
+  border-color: var(--sanbai-orange);
+}
+
+.section {
+  background: white;
+  margin-top: 24px;
+  padding: 24px;
+  border-radius: 8px;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px,1fr));
+  gap: 16px;
+}
+
+.stat {
+  border-top: 4px solid var(--sanbai-orange);
+  padding: 16px;
+}
+
+.interno-only { display: none; }
+
+@media print {
+  button { display: none; }
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<div class="header">
+  <div class="header-brand">
+    <img src="logo.png" class="logo">
+    <div>
+      <h1>Proyecto Torre Macro</h1>
+      <p>Dashboard Ejecutivo / PM</p>
+    </div>
+  </div>
+  <div>
+    <span class="badge badge-ok">EN TIEMPO</span><br>
+    <button id="btn-comite" class="active" onclick="setView('comite')">Comité</button>
+    <button id="btn-interno" onclick="setView('interno')">Interno</button>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Indicadores</h2>
+  <div class="stats">
+    <div class="stat"><i class="fa-solid fa-network-wired"></i><br><strong>170</strong><br>Switches</div>
+    <div class="stat"><i class="fa-solid fa-clock"></i><br><strong>4</strong><br>Meses</div>
+    <div class="stat"><i class="fa-solid fa-shield-halved"></i><br><strong>7x24</strong><br>Soporte</div>
+  </div>
+</div>
+
+<div class="section interno-only">
+  <h2>Riesgos Internos</h2>
+  <ul>
+    <li>Disponibilidad de VMs</li>
+    <li>Coordinación ISE</li>
+  </ul>
+</div>
+
+</div>
+
+<script>
+function setView(view) {
+  document.querySelectorAll('.interno-only').forEach(e => e.style.display = view === 'interno' ? 'block' : 'none');
+  document.getElementById('btn-comite').classList.toggle('active', view === 'comite');
+  document.getElementById('btn-interno').classList.toggle('active', view === 'interno');
+}
+</script>
+
+</body>
+</html>
