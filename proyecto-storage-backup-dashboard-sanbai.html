@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Banco Macro - Storage Backup (STR) | Dashboard</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <style>
+    :root {
+      --sanbai-orange: #F76B1C;
+      --ink: #1C1C1C;
+      --ink-2: #2F2F2F;
+      --muted: #667085;
+      --bg: #F5F6F8;
+      --card: #FFFFFF;
+      --line: #E6E8EC;
+
+      --success: #16A34A;
+      --warning: #F59E0B;
+      --info: #2563EB;
+      --danger: #DC2626;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: var(--bg);
+      padding: 20px;
+      min-height: 100vh;
+      color: var(--ink);
+    }
+
+    .container { max-width: 1400px; margin: 0 auto; }
+
+    .card {
+      background: var(--card);
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      box-shadow: 0 8px 22px rgba(0,0,0,0.06);
+    }
+
+    /* ===== Header ===== */
+    .header {
+      background: var(--card);
+      padding: 22px 26px;
+      border-radius: 14px;
+      border-left: 6px solid var(--sanbai-orange);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      min-width: 280px;
+    }
+
+    .brand img {
+      height: 44px;
+      width: auto;
+      display: block;
+    }
+
+    .brand h1 {
+      font-size: 1.65rem;
+      letter-spacing: 0.2px;
+      line-height: 1.15;
+    }
+
+    .brand p {
+      color: var(--muted);
+      margin-top: 4px;
+      font-size: 0.98rem;
+      max-width: 720px;
+    }
+
+    .meta {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: flex-end;
+      flex: 1;
+      min-width: 260px;
+    }
+
+    .badges {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      border: 1px solid rgba(0,0,0,0.06);
+      background: #fff;
+      white-space: nowrap;
+    }
+
+    .badge.success { color: var(--success); border-color: rgba(22,163,74,0.25); }
+    .badge.warning { color: #B45309; border-color: rgba(245,158,11,0.35); }
+    .badge.info { color: var(--info); border-color: rgba(37,99,235,0.25); }
+    .badge.neutral { color: var(--ink-2); border-color: rgba(0,0,0,0.10); }
+
+    .submeta {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .submeta i { color: var(--sanbai-orange); margin-right: 8px; }
+
+    /* ===== Layout ===== */
+    .grid { display: grid; gap: 16px; }
+
+    .stats-grid {
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      margin-bottom: 16px;
+    }
+
+    .section {
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .section-title h2 {
+      font-size: 1.2rem;
+      letter-spacing: 0.2px;
+    }
+
+    .section-title h2 i {
+      color: var(--sanbai-orange);
+      margin-right: 10px;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    /* ===== KPI Cards ===== */
+    .stat-card {
+      padding: 18px 18px 16px 18px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: var(--sanbai-orange);
+    }
+
+    .stat-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      background: rgba(247,107,28,0.10);
+      color: var(--sanbai-orange);
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+
+    .stat-value {
+      font-size: 1.85rem;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.10em;
+    }
+
+    /* ===== Scope ===== */
+    .scope-grid {
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      margin-bottom: 16px;
+    }
+
+    .scope-card { padding: 18px; }
+
+    .scope-card h3 {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.02rem;
+      margin-bottom: 10px;
+    }
+
+    .scope-card h3 i { color: var(--sanbai-orange); }
+
+    .scope-card ul { list-style: none; }
+
+    .scope-card li {
+      padding: 9px 0;
+      border-bottom: 1px solid var(--line);
+      color: #344054;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      font-size: 0.96rem;
+    }
+
+    .scope-card li:last-child { border-bottom: none; }
+
+    .scope-card li::before {
+      content: "\f058";
+      font-family: "Font Awesome 6 Free";
+      font-weight: 900;
+      color: var(--success);
+      margin-top: 2px;
+    }
+
+    /* ===== Timeline ===== */
+    .timeline-items {
+      position: relative;
+      padding-left: 34px;
+      margin-top: 8px;
+    }
+
+    .timeline-items::before {
+      content: "";
+      position: absolute;
+      left: 14px;
+      top: 4px;
+      bottom: 4px;
+      width: 3px;
+      background: rgba(247,107,28,0.85);
+      border-radius: 3px;
+    }
+
+    .timeline-item {
+      position: relative;
+      padding-bottom: 14px;
+    }
+    .timeline-item:last-child { padding-bottom: 0; }
+
+    .timeline-item::before {
+      content: "";
+      position: absolute;
+      left: -27px;
+      top: 6px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #fff;
+      border: 3px solid var(--sanbai-orange);
+      box-shadow: 0 0 0 4px rgba(247,107,28,0.12);
+    }
+
+    .timeline-item.active::before { background: var(--sanbai-orange); }
+
+    .timeline-content {
+      background: #FAFAFB;
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--sanbai-orange);
+      padding: 14px 14px 12px 14px;
+      border-radius: 12px;
+    }
+
+    .timeline-title {
+      font-weight: 800;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .timeline-title i { color: var(--sanbai-orange); }
+
+    .timeline-duration {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+    }
+
+    .timeline-desc {
+      color: #344054;
+      font-size: 0.95rem;
+      line-height: 1.35;
+    }
+
+    /* ===== Team ===== */
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    .team-card {
+      padding: 14px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: #FAFAFB;
+    }
+
+    .team-role {
+      font-weight: 800;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .team-role i { color: var(--sanbai-orange); }
+
+    .team-name {
+      color: #344054;
+      font-size: 0.95rem;
+      line-height: 1.25;
+    }
+
+    /* ===== Critical ===== */
+    .critical {
+      border-left: 6px solid var(--danger);
+      padding: 20px;
+    }
+
+    .critical .critical-items {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .critical-item {
+      border: 1px solid var(--line);
+      background: #FFFBFB;
+      padding: 12px;
+      border-radius: 12px;
+    }
+
+    .critical-item strong {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+      font-size: 0.98rem;
+    }
+
+    .critical-item strong i { color: var(--danger); }
+
+    /* ===== Table ===== */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+    }
+
+    thead th {
+      background: var(--ink);
+      color: white;
+      padding: 12px;
+      text-align: left;
+      font-size: 0.92rem;
+    }
+
+    tbody td {
+      padding: 12px;
+      vertical-align: top;
+      border-top: 1px solid var(--line);
+      color: #344054;
+      font-size: 0.95rem;
+      line-height: 1.35;
+    }
+
+    tbody tr:nth-child(odd) td { background: #FAFAFB; }
+
+    /* ===== Finance (OC) ===== */
+    .fin-grid { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+    .fin-card { padding: 16px; }
+    .fin-title { font-weight: 900; margin-bottom: 10px; display:flex; align-items:center; gap:10px; }
+    .fin-title i { color: var(--sanbai-orange); }
+    .fin-row { display:flex; justify-content:space-between; gap:12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+    .fin-row:last-child { border-bottom: none; }
+    .fin-row span { color: var(--muted); }
+    .fin-muted { margin-top: 12px; color: var(--muted); font-size: 0.9rem; }
+
+    .pill {
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 7px 10px; border-radius: 999px;
+      border: 1px solid rgba(0,0,0,0.10);
+      background: #fff;
+      font-weight: 800;
+      color: var(--ink-2);
+      font-size: 0.85rem;
+    }
+    .pill.ok { color: var(--success); border-color: rgba(22,163,74,0.25); }
+    .pill.warn { color: #B45309; border-color: rgba(245,158,11,0.35); }
+
+    /* ===== Objective ===== */
+    .objective {
+      background: var(--ink);
+      color: white;
+      padding: 22px;
+    }
+
+    .objective h2 {
+      font-size: 1.25rem;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .objective h2 i { color: var(--sanbai-orange); }
+
+    .objective p {
+      color: rgba(255,255,255,0.92);
+      line-height: 1.5;
+      font-size: 1.02rem;
+    }
+
+    @media (max-width: 768px) {
+      body { padding: 14px; }
+      .meta { align-items: flex-start; }
+      .badges { justify-content: flex-start; }
+      .brand h1 { font-size: 1.35rem; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <!-- HEADER -->
+    <div class="header card">
+      <div class="header-top">
+        <div class="brand">
+          <img src="logo.png" alt="Sanbai">
+          <div>
+            <h1>Banco Macro – Ampliación STRs (Storage Backup)</h1>
+            <p>
+              Expansión de Huawei OceanProtect X8000 (2 datacenters) + movimiento de DAEs a nuevo rack + instalación e integración.
+              Alcance con soporte y mantenimiento por 36 meses.
+            </p>
+          </div>
+        </div>
+
+        <div class="meta">
+          <div class="badges">
+            <span class="badge success"><i class="fa-solid fa-circle-check"></i> En ejecución</span>
+            <span class="badge neutral"><i class="fa-solid fa-calendar"></i> Vigencia: 36 meses</span>
+            <span class="badge info"><i class="fa-solid fa-location-dot"></i> 2 DCs (Telecom + Telecentro)</span>
+            <span class="badge warning"><i class="fa-solid fa-dollar-sign"></i> OC: USD 316,080.11</span>
+          </div>
+          <div class="submeta">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            Última actualización: <strong id="lastUpdated">--/--/----</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI / Snapshot -->
+    <div class="grid stats-grid">
+      <div class="card stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-database"></i></div>
+        <div class="stat-value">OceanProtect X8000</div>
+        <div class="stat-label">Plataforma de backup</div>
+      </div>
+
+      <div class="card stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-building"></i></div>
+        <div class="stat-value">2</div>
+        <div class="stat-label">Datacenters (sitios)</div>
+      </div>
+
+      <div class="card stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-hard-drive"></i></div>
+        <div class="stat-value">+ Licencias & Discos</div>
+        <div class="stat-label">Cajones / discos / licencias</div>
+      </div>
+
+      <div class="card stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-shield-halved"></i></div>
+        <div class="stat-value">24/7</div>
+        <div class="stat-label">Hi-Care Premier Onsite</div>
+      </div>
+
+      <div class="card stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+        <div class="stat-value">USD 316,080.11</div>
+        <div class="stat-label">Monto total OC 00011</div>
+      </div>
+
+      <div class="card stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+        <div class="stat-value">USD 3,000</div>
+        <div class="stat-label">Costo extra: rackeo + cableado</div>
+      </div>
+    </div>
+
+    <!-- Alcance -->
+    <div class="grid scope-grid">
+      <div class="card scope-card">
+        <h3><i class="fa-solid fa-diagram-project"></i> Alcance principal</h3>
+        <ul>
+          <li>Expansión de OceanProtect X8000 en 2 datacenters</li>
+          <li>Provisión de cajones de disco, discos y licencias</li>
+          <li>Movimientos de DAEs existentes a nuevo rack (por sitio)</li>
+          <li>Instalación, integración y puesta en funcionamiento</li>
+        </ul>
+      </div>
+
+      <div class="card scope-card">
+        <h3><i class="fa-solid fa-headset"></i> Soporte & SLA</h3>
+        <ul>
+          <li>Huawei Hi-Care Premier Onsite</li>
+          <li>TAC 24x7</li>
+          <li>Reemplazo avanzado de HW</li>
+          <li>Ventana 24x7x4 (P1/P2)</li>
+        </ul>
+      </div>
+
+      <div class="card scope-card">
+        <h3><i class="fa-solid fa-map-location-dot"></i> Sitios</h3>
+        <ul>
+          <li>DC Telecom (Buenos Aires)</li>
+          <li>DC Telecentro (Buenos Aires)</li>
+          <li>Trabajo coordinado por PM (Sanbai)</li>
+          <li>Seguimiento semanal con el Banco</li>
+        </ul>
+      </div>
+
+      <div class="card scope-card">
+        <h3><i class="fa-solid fa-circle-info"></i> Exclusiones / Notas</h3>
+        <ul>
+          <li>No incluye licencias de software de backup (ej. Commvault)</li>
+          <li>No contempla expansión de controladoras</li>
+          <li>Incluye servicios para dejar la ampliación operativa</li>
+          <li>Más trabajos se validan por CR</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- OC comprometida -->
+    <div class="card section">
+      <div class="section-title">
+        <h2><i class="fa-solid fa-file-invoice-dollar"></i>OC comprometida</h2>
+        <div class="hint">Base de seguimiento financiero • DDP Buenos Aires • Pago 30 días FF</div>
+      </div>
+
+      <div class="grid fin-grid">
+
+        <div class="card fin-card">
+          <div class="fin-title"><i class="fa-solid fa-boxes-stacked"></i> OC 00011 – Equipamiento Storage Backup</div>
+          <div class="fin-row"><span>Proveedor</span><strong>Intermaco S.R.L.</strong></div>
+          <div class="fin-row"><span>Fecha OC</span><strong>26/12/2025</strong></div>
+          <div class="fin-row"><span>Condición entrega</span><strong>DDP Buenos Aires</strong></div>
+          <div class="fin-row"><span>Forma de pago</span><strong>30 días Fecha de Factura</strong></div>
+          <div class="fin-row"><span>Monto total</span><strong>USD 316,080.11</strong></div>
+
+          <div class="fin-muted" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <span class="pill ok"><i class="fa-solid fa-circle-check"></i> Comprometida</span>
+            <a class="pill" href="docs/OC00011.pdf" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">
+              <i class="fa-solid fa-file-pdf"></i> Ver PDF
+            </a>
+          </div>
+        </div>
+
+        <div class="card fin-card">
+          <div class="fin-title"><i class="fa-solid fa-layer-group"></i> Componentes (alto nivel)</div>
+          <div class="fin-row"><span>Servicios profesionales (plan/diseño/commissioning)</span><strong>Incluido</strong></div>
+          <div class="fin-row"><span>Discos SSD 7.68TB</span><strong>Incluido</strong></div>
+          <div class="fin-row"><span>DAE Disk Enclosure</span><strong>Incluido</strong></div>
+          <div class="fin-row"><span>Licencias de capacidad</span><strong>Incluido</strong></div>
+          <div class="fin-row"><span>Soporte 36 meses (Hi-Care)</span><strong>Incluido</strong></div>
+
+          <div class="fin-muted">
+            Referencia: OC 00011 incluye equipamiento + servicios profesionales y soporte.
+          </div>
+        </div>
+
+        <div class="card fin-card">
+          <div class="fin-title"><i class="fa-solid fa-plus"></i> Costos adicionales (interno)</div>
+          <div class="fin-row"><span>Rackeo + cableado</span><strong>USD 3,000</strong></div>
+          <div class="fin-muted">
+            (Costo informado para contemplar tareas complementarias de instalación física).
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Cronograma -->
+    <div class="card section">
+      <div class="section-title">
+        <h2><i class="fa-solid fa-calendar-check"></i>Cronograma (alto nivel)</h2>
+        <div class="hint">Basado en cronograma compartido • Ajustable por ventana y coordinación por sitio</div>
+      </div>
+
+      <div class="timeline-items">
+        <div class="timeline-item active">
+          <div class="timeline-content">
+            <div class="timeline-title"><i class="fa-solid fa-file-signature"></i> PO registration / Emisión de PO</div>
+            <div class="timeline-duration">29/12/2025</div>
+            <div class="timeline-desc">Registro y formalización de la orden para inicio del ciclo de provisión.</div>
+          </div>
+        </div>
+
+        <div class="timeline-item active">
+          <div class="timeline-content">
+            <div class="timeline-title"><i class="fa-solid fa-plane-arrival"></i> Fabricación y transporte internacional</div>
+            <div class="timeline-duration">~30/12/2025 → ~05/02/2026</div>
+            <div class="timeline-desc">Fabricación + logística internacional, en línea con requerimientos de fechas del Banco.</div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-content">
+            <div class="timeline-title"><i class="fa-solid fa-handshake"></i> Reunión Kickoff</div>
+            <div class="timeline-duration">~19/01/2026 → ~23/01/2026</div>
+            <div class="timeline-desc">Kickoff HW + Sanbai + Banco: confirmación de ventanas, recursos y plan.</div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-content">
+            <div class="timeline-title"><i class="fa-solid fa-pen-ruler"></i> Diseño de implementación / MOP</div>
+            <div class="timeline-duration">~19/01/2026 → ~01/02/2026</div>
+            <div class="timeline-desc">Plan, MOP, pasos de instalación, rollback y coordinaciones por sitio.</div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-content">
+            <div class="timeline-title"><i class="fa-solid fa-magnifying-glass"></i> Survey a sitio (confirmación cableado)</div>
+            <div class="timeline-duration">~26/01/2026 → ~01/02/2026</div>
+            <div class="timeline-desc">Validación física de condiciones, energía, rack y cableado.</div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-content">
+            <div class="timeline-title"><i class="fa-solid fa-arrows-rotate"></i> Movimiento DAEs actuales (DC1 / DC2)</div>
+            <div class="timeline-duration">DC1: ~04/02/2026 → ~06/02/2026 • DC2: ~09/02/2026 → ~11/02/2026</div>
+            <div class="timeline-desc">Reubicación de 3 DAEs por datacenter a nuevo rack (tarea crítica).</div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-content">
+            <div class="timeline-title"><i class="fa-solid fa-truck"></i> Transporte a sitio</div>
+            <div class="timeline-duration">~06/02/2026 → ~16/02/2026</div>
+            <div class="timeline-desc">Traslado y preparación de equipamiento para instalación.</div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-content">
+            <div class="timeline-title"><i class="fa-solid fa-screwdriver-wrench"></i> Instalación física nuevos DAEs</div>
+            <div class="timeline-duration">~18/02/2026 → ~20/02/2026</div>
+            <div class="timeline-desc">Instalación, rackeo, cableado y verificación inicial por sitio.</div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-content">
+            <div class="timeline-title"><i class="fa-solid fa-power-off"></i> Encendido equipos en nuevo rack</div>
+            <div class="timeline-duration">~21/02/2026 → ~23/02/2026</div>
+            <div class="timeline-desc">Energización y validación de condiciones de funcionamiento.</div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-content">
+            <div class="timeline-title"><i class="fa-solid fa-rocket"></i> Puesta en marcha / expansión</div>
+            <div class="timeline-duration">~24/02/2026 → ~25/02/2026</div>
+            <div class="timeline-desc">Integración con la solución existente y verificaciones funcionales.</div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-content">
+            <div class="timeline-title"><i class="fa-solid fa-clipboard-check"></i> Aceptación funcional (usuario)</div>
+            <div class="timeline-duration">~27/02/2026 → ~28/02/2026</div>
+            <div class="timeline-desc">Validación y aceptación por parte del Banco.</div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-content">
+            <div class="timeline-title"><i class="fa-solid fa-signature"></i> Firma cierre</div>
+            <div class="timeline-duration">~02/03/2026 → ~09/03/2026</div>
+            <div class="timeline-desc">Cierre administrativo y formalización de la aceptación final.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Equipo -->
+    <div class="card section">
+      <div class="section-title">
+        <h2><i class="fa-solid fa-people-group"></i>Equipo del proyecto</h2>
+        <div class="hint">Responsables operativos por actividad</div>
+      </div>
+
+      <div class="team-grid">
+        <div class="team-card">
+          <div class="team-role"><i class="fa-solid fa-bullseye"></i> PM principal</div>
+          <div class="team-name">Sebastián Pittaluga<br>(contacto primario)</div>
+        </div>
+
+        <div class="team-card">
+          <div class="team-role"><i class="fa-solid fa-file-lines"></i> Vendor / TAC</div>
+          <div class="team-name">Huawei (Hi-Care Premier Onsite)</div>
+        </div>
+
+        <div class="team-card">
+          <div class="team-role"><i class="fa-solid fa-toolbox"></i> Implementación en sitio</div>
+          <div class="team-name">Sanbai + coordinación con Banco</div>
+        </div>
+
+        <div class="team-card">
+          <div class="team-role"><i class="fa-solid fa-landmark"></i> Cliente</div>
+          <div class="team-name">Banco Macro (PM asignado + accesos + coordinación)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Riesgos -->
+    <div class="card critical">
+      <div class="section-title">
+        <h2><i class="fa-solid fa-triangle-exclamation"></i>Riesgos y dependencias críticas</h2>
+        <div class="hint">Acción inmediata / desbloqueos</div>
+      </div>
+
+      <div class="critical-items">
+        <div class="critical-item">
+          <strong><i class="fa-solid fa-warehouse"></i> Ventanas y accesos por sitio</strong>
+          Confirmar ventanas de trabajo y accesos a racks / DCs para movimientos e instalación.
+        </div>
+
+        <div class="critical-item">
+          <strong><i class="fa-solid fa-network-wired"></i> Condición de rackeo y cableado</strong>
+          Validar infraestructura para rackeo + cableado (incluye costo extra interno USD 3,000).
+        </div>
+
+        <div class="critical-item">
+          <strong><i class="fa-solid fa-boxes-stacked"></i> Recepción logística</strong>
+          Coordinación de recepción en sitio y checklist de integridad del equipamiento.
+        </div>
+
+        <div class="critical-item">
+          <strong><i class="fa-solid fa-clipboard-check"></i> Aceptación y pruebas</strong>
+          Definir criterios de aceptación y disponibilidad del equipo del Banco para validación.
+        </div>
+      </div>
+    </div>
+
+    <!-- Matriz de responsabilidades -->
+    <div class="card section">
+      <div class="section-title">
+        <h2><i class="fa-solid fa-table"></i>Matriz de responsabilidades</h2>
+        <div class="hint">Qué entrega cada parte (alcance operativo)</div>
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 220px;">Responsable</th>
+              <th>Alcance</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Huawei</strong></td>
+              <td>
+                ✅ Hi-Care Premier Onsite (TAC 24x7)<br>
+                ✅ Soporte y mantenimiento 36 meses<br>
+                ✅ Reemplazo HW según SLA<br>
+                ✅ Asistencia técnica para incidentes / escalamiento
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Sanbai</strong></td>
+              <td>
+                ✅ Project Management y seguimiento semanal<br>
+                ✅ Coordinación de instalación e integración por sitio<br>
+                ✅ Servicios de movimiento de DAEs a nuevo rack (por DC)<br>
+                ✅ Instalación y puesta en funcionamiento de ampliación
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Banco Macro</strong></td>
+              <td>
+                ✅ Asignar PM de referencia y recursos<br>
+                ✅ Proveer accesos físicos y permisos de trabajo<br>
+                ✅ Asegurar condiciones de energía, climatización, espacio<br>
+                ✅ Aprobar pruebas y firma de aceptación
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Objetivo -->
+    <div class="card objective">
+      <h2><i class="fa-solid fa-flag"></i>Objetivo principal</h2>
+      <p>
+        Expandir la capacidad y disponibilidad de la infraestructura de backup Huawei OceanProtect X8000 en dos datacenters,
+        asegurando una integración controlada (movimiento de DAEs + instalación de nuevos componentes) y soporte premium 24/7
+        por 36 meses, con aceptación funcional del Banco.
+      </p>
+    </div>
+
+  </div>
+
+  <script>
+    // Última actualización automática (fecha local)
+    (function setLastUpdated(){
+      const d = new Date();
+      const dd = String(d.getDate()).padStart(2,'0');
+      const mm = String(d.getMonth()+1).padStart(2,'0');
+      const yyyy = d.getFullYear();
+      const el = document.getElementById('lastUpdated');
+      if (el) el.textContent = `${dd}/${mm}/${yyyy}`;
+    })();
+  </script>
+</body>
+</html>
