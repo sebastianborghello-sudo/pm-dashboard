@@ -222,16 +222,14 @@
             <h1>Dashboard PM</h1>
         </div>
         <div class="project-selector">
-  <button
-    class="btn btn-white"
-    onclick="window.open(
-      'https://sanbai-pm-dashboard.netlify.app/proyecto-macro-dashboard-sanbai.html',
-      '_blank'
-    )"
-    title="Ver información del proyecto"
-  >
-    ℹ️ Info Proyecto
-  </button>
+  <a id="btnProjectInfo"
+   class="btn"
+   href="#"
+   target="_blank"
+   rel="noopener">
+   <i class="fa-solid fa-circle-info"></i> Info proyecto
+</a>
+
 
   <select id="projectSelector"></select>
 </div>
@@ -329,12 +327,37 @@
     </div>
 
     <script>
+
+const PROJECT_INFO_LINKS = {
+  macro_lan: "https://sanbai-pm-dashboard.netlify.app/proyecto-macro-dashboard-sanbai.html",
+  storage_backup: "https://sanbai-pm-dashboard.netlify.app/proyecto-storage-backup-dashboard-sanbai.html",
+};
+
+function updateProjectInfoButton(projectKey) {
+  const btn = document.getElementById("btnProjectInfo");
+  if (!btn) return;
+
+  const url = PROJECT_INFO_LINKS[projectKey];
+
+  if (url) {
+    btn.href = url;
+    btn.style.display = "inline-flex";
+  } else {
+    btn.href = "#";
+    btn.style.display = "none";
+  }
+}
+
+        
 function requireLoginThenBoot() {
   if (!window.netlifyIdentity) {
     // Si por algún motivo no cargó el widget, arrancamos igual (modo abierto)
     boot();
     return;
   }
+
+    
+
 
   // Importante: inicializar el widget una vez
   window.netlifyIdentity.init();
@@ -409,6 +432,7 @@ function loadProjectsFromStorage() {
     renderTeam();
     renderCritical();
     updateMetrics();
+      updateProjectInfoButton(currentProjectKey);
   });
 }
 
@@ -459,9 +483,9 @@ function renderProjectMeta() {
   },
 
   // Ejemplo 2 (duplicá este bloque para nuevos proyectos)
-  core_storage: {
+  storage_backup: {
     meta: {
-      name: "Banco Macro - Core Storage",
+      name: "Banco Macro - Ampliacion Storage Backup",
       subtitle: "Actualización y expansión de almacenamiento",
       statusLabel: "Planificación",
       client: "Banco Macro S.A.",
@@ -498,6 +522,7 @@ function resetStorage() {
             renderTeam();
             renderCritical();
             updateMetrics();
+            updateProjectInfoButton(currentProjectKey);
             
             document.querySelectorAll('.tab').forEach(tab => {
                 tab.addEventListener('click', function() {
@@ -849,7 +874,6 @@ sortTasksByDate(currentProject.tasks || []).forEach(task => {
             init();
         }
 
-        boot();
     </script>
 </body>
 </html>
