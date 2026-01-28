@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard PM | Sanbai (Corporate)</title>
@@ -205,7 +206,6 @@
         }
 
     </style>
-    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 <button
   class="btn btn-white"
   onclick="netlifyIdentity.logout()"
@@ -329,21 +329,40 @@
     </div>
 
     <script>
-        if (window.netlifyIdentity) {
-  window.netlifyIdentity.on("init", user => {
-    if (!user) {
-      window.netlifyIdentity.open(); // fuerza login
+function requireLoginThenBoot() {
+  if (!window.netlifyIdentity) {
+    // Si por algún motivo no cargó el widget, arrancamos igual (modo abierto)
+    boot();
+    return;
+  }
+
+  // Importante: inicializar el widget una vez
+  window.netlifyIdentity.init();
+
+  window.netlifyIdentity.on("init", (user) => {
+    if (user) {
+      // Ya está logueado → arrancar dashboard
+      boot();
+    } else {
+      // No logueado → mostrar modal
+      window.netlifyIdentity.open();
     }
   });
 
   window.netlifyIdentity.on("login", () => {
-    window.location.reload();
+    // No recargar: cerrar modal y arrancar
+    window.netlifyIdentity.close();
+    boot();
   });
 
   window.netlifyIdentity.on("logout", () => {
-    window.location.reload();
+    // Al salir, volvemos a pedir login
+    window.netlifyIdentity.open();
   });
 }
+
+// En vez de llamar boot() directo, llamá esto:
+requireLoginThenBoot();
 
     const STORAGE_KEY = "pm_projects_v1";
 
