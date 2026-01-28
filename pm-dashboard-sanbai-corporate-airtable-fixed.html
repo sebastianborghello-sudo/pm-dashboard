@@ -352,7 +352,6 @@ function updateProjectInfoButton(projectKey) {
 function requireLoginThenBoot() {
   if (!window.netlifyIdentity) {
     // Si por algún motivo no cargó el widget, arrancamos igual (modo abierto)
-    boot();
     return;
   }
 
@@ -919,34 +918,7 @@ async function saveTask() {
             setTimeout(() => { try { el.remove(); } catch(e){} }, 8000);
         }
 
-        async function boot() {
-            // 1) Intentar cargar desde backend (seguro). 2) Si falla, usar datos embebidos.
-            try {
-                const remoteProjects = await loadFromBackend();
-                // Reemplazar proyectos por los del backend
-                projects = remoteProjects;
-                showConnectionStatus(true, 'Conectado a Airtable');
-            } catch (e) {
-                // Fallback local + storage
-                loadProjectsFromStorage();
-                showConnectionStatus(false, 'Sin conexión a Airtable (modo local)');
-                console.warn(e);
-            }
-
-            // Elegir proyecto inicial
-            const keys = Object.keys(projects);
-            if (!keys.length) {
-                // Evitar crash si no hay datos
-                projects = {};
-                currentProjectKey = null;
-                currentProject = { meta: { name: 'Sin proyectos', subtitle: '', statusLabel: '' }, tasks: [], team: [], critical: [] };
-            } else {
-                if (!currentProjectKey || !projects[currentProjectKey]) currentProjectKey = keys[0];
-                currentProject = projects[currentProjectKey];
-            }
-
-            init();
-        }
+     
 
     </script>
 </body>
