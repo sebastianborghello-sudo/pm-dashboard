@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard PM | Sanbai (Base mínima)</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root{
+      --sanbai-orange:#ff7a00;
+      --sanbai-dark:#1c1c1c;
+      --sanbai-gray:#2f2f2f;
+      --sanbai-light:#f5f5f5;
+      --card:#fff;
+      --muted:#6b7280;
+      --line:#e5e7eb;
+    }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: var(--sanbai-light); color: var(--sanbai-dark); }
+
+    .top-bar{
+      background: linear-gradient(135deg, var(--sanbai-dark) 0%, var(--sanbai-gray) 100%);
+      color: white;
+      padding: 14px 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .top-bar-left { display:flex; align-items:center; gap:14px; }
+    .logo-img{
+      height: 32px;
+      background: white;
+      padding: 6px 10px;
+      border-radius: 8px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.10);
+    }
+    .top-bar h1{ font-size: 18px; font-weight: 700; letter-spacing: .2px; }
+
+    .project-selector{ display:flex; align-items:center; gap:10px; flex-wrap: wrap; justify-content: flex-end; }
+    select{
+      padding: 8px 12px;
+      border: 0;
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+      min-width: 260px;
+    }
+    .btn{
+      padding: 8px 12px;
+      border: 0;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+      text-decoration: none;
+      user-select: none;
+    }
+    .btn:hover{ transform: translateY(-1px); box-shadow: 0 10px 22px rgba(0,0,0,0.12); }
+    .btn:disabled{ opacity:.5; cursor:not-allowed; transform:none; box-shadow:none; }
+
+    .btn-white{ background:white; color: var(--sanbai-dark); }
+    .btn-primary{ background: var(--sanbai-orange); color: white; }
+
+    .container { padding: 18px; max-width: 1400px; margin: 0 auto; }
+
+    .card{
+      background: var(--card);
+      border-radius: 14px;
+      box-shadow: 0 10px 26px rgba(0,0,0,0.08);
+      padding: 18px;
+      border: 1px solid rgba(0,0,0,0.03);
+    }
+    .project-header{
+      border-left: 6px solid var(--sanbai-orange);
+      margin-bottom: 14px;
+    }
+    .ph-top{ display:flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .ph-title{ font-size: 20px; font-weight: 800; }
+    .ph-sub{ margin-top: 4px; color: var(--muted); }
+    .badge{
+      display:inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      background: #fff2e8;
+      color: #7a2e00;
+      border: 1px solid rgba(255,122,0,0.25);
+      white-space: nowrap;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 340px;
+      gap: 14px;
+    }
+    @media (max-width: 1100px){ .grid{ grid-template-columns: 1fr; } }
+
+    .info-grid{
+      margin-top: 14px;
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 12px;
+      border-top: 1px solid var(--line);
+      padding-top: 12px;
+    }
+    .info-label{ font-size: 12px; font-weight: 800; letter-spacing: .06em; color: var(--muted); text-transform: uppercase; }
+    .info-value{ margin-top: 2px; font-size: 14px; font-weight: 800; }
+
+    .section-title{
+      display:flex; align-items:center; justify-content: space-between;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 12px;
+      gap: 10px;
+    }
+    .section-title .t{ display:flex; align-items:center; gap:10px; font-size: 16px; font-weight: 900; }
+    .muted{ color: var(--muted); font-size: 13px; }
+
+    .task{
+      background:#fafafa;
+      border: 1px solid rgba(0,0,0,0.04);
+      border-left: 5px solid #d1d5db;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    .task.pending{ border-left-color:#f59e0b; }
+    .task.in-progress{ border-left-color:var(--sanbai-orange); }
+    .task.completed{ border-left-color:#22c55e; opacity: .75; }
+    .task.blocked{ border-left-color:#ef4444; }
+
+    .task-top{ display:flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .task-name{ font-weight: 900; }
+    .task-status{
+      font-size: 11px;
+      font-weight: 900;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #111827;
+      color: #fff;
+      white-space: nowrap;
+    }
+    .task-desc{ margin-top: 6px; color: var(--muted); font-size: 13px; }
+    .task-meta{ margin-top: 8px; display:flex; gap: 12px; flex-wrap: wrap; color: var(--muted); font-size: 12px; font-weight: 700; }
+    .pill{ display:inline-flex; align-items:center; gap: 6px; }
+
+    .panel{
+      display:flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .toast{
+      position: fixed;
+      left: 16px;
+      bottom: 16px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 900;
+      box-shadow: 0 10px 22px rgba(0,0,0,0.12);
+      z-index: 9999;
+      color: white;
+      max-width: 360px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <img src="logo.png" class="logo-img" alt="Sanbai Solutions">
+      <h1>Dashboard PM (Base mínima)</h1>
+    </div>
+
+    <div class="project-selector">
+      <a id="btnProjectInfo" class="btn btn-white" href="#" target="_blank" rel="noopener">
+        <i class="fa-solid fa-circle-info"></i> Info proyecto
+      </a>
+
+      <select id="projectSelector" aria-label="Seleccionar proyecto"></select>
+
+      <button id="btnLogout" class="btn btn-primary" type="button" title="Cerrar sesión">
+        <i class="fa-solid fa-right-from-bracket"></i> Logout
+      </button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="card project-header">
+      <div class="ph-top">
+        <div>
+          <div id="phTitle" class="ph-title">—</div>
+          <div id="phSub" class="ph-sub">—</div>
+        </div>
+        <span id="phBadge" class="badge">—</span>
+      </div>
+
+      <div class="info-grid">
+        <div>
+          <div class="info-label">Cliente</div>
+          <div id="infoClient" class="info-value">—</div>
+        </div>
+        <div>
+          <div class="info-label">Monto</div>
+          <div id="infoAmount" class="info-value">—</div>
+        </div>
+        <div>
+          <div class="info-label">Inicio</div>
+          <div id="infoStart" class="info-value">—</div>
+        </div>
+        <div>
+          <div class="info-label">Fin estimado</div>
+          <div id="infoEnd" class="info-value">—</div>
+        </div>
+        <div>
+          <div class="info-label">PM responsable</div>
+          <div id="infoPM" class="info-value">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="card">
+          <div class="section-title">
+            <div class="t"><i class="fa-solid fa-list-check"></i> Tareas</div>
+            <div class="muted">Solo lectura (base mínima)</div>
+          </div>
+          <div id="tasksList"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="card">
+          <div class="section-title">
+            <div class="t"><i class="fa-solid fa-users"></i> Equipo</div>
+          </div>
+          <div id="teamList" class="muted">—</div>
+        </div>
+
+        <div class="card">
+          <div class="section-title">
+            <div class="t"><i class="fa-solid fa-triangle-exclamation"></i> Riesgos / bloqueadores</div>
+          </div>
+          <div id="criticalList" class="muted">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================
+    // CONFIG
+    // =========================
+    const PROJECT_INFO_LINKS = {
+      macro_lan: "https://sanbai-pm-dashboard.netlify.app/proyecto-macro-dashboard-sanbai.html",
+      storage_backup: "https://sanbai-pm-dashboard.netlify.app/proyecto-storage-backup-dashboard-sanbai.html",
+    };
+
+    // =========================
+    // STATE
+    // =========================
+    let projects = {};
+    let currentProjectKey = null;
+
+    // =========================
+    // DOM
+    // =========================
+    const els = {};
+    function cacheEls(){
+      els.selector = document.getElementById("projectSelector");
+      els.btnInfo = document.getElementById("btnProjectInfo");
+      els.btnLogout = document.getElementById("btnLogout");
+
+      els.phTitle = document.getElementById("phTitle");
+      els.phSub   = document.getElementById("phSub");
+      els.phBadge = document.getElementById("phBadge");
+
+      els.infoClient = document.getElementById("infoClient");
+      els.infoAmount = document.getElementById("infoAmount");
+      els.infoStart  = document.getElementById("infoStart");
+      els.infoEnd    = document.getElementById("infoEnd");
+      els.infoPM     = document.getElementById("infoPM");
+
+      els.tasksList = document.getElementById("tasksList");
+      els.teamList  = document.getElementById("teamList");
+      els.criticalList = document.getElementById("criticalList");
+    }
+
+    // =========================
+    // UI helpers
+    // =========================
+    function toast(ok, msg){
+      const d = document.createElement("div");
+      d.className = "toast";
+      d.style.background = ok ? "rgba(34,197,94,0.95)" : "rgba(245,158,11,0.95)";
+      d.textContent = msg || (ok ? "OK" : "Error");
+      document.body.appendChild(d);
+      setTimeout(() => { try { d.remove(); } catch(e){} }, 6500);
+    }
+
+    function updateProjectInfoButton(projectKey){
+      const url = PROJECT_INFO_LINKS[projectKey];
+      if (url) {
+        els.btnInfo.href = url;
+        els.btnInfo.style.display = "inline-flex";
+      } else {
+        els.btnInfo.href = "#";
+        els.btnInfo.style.display = "none";
+      }
+    }
+
+    function labelForStatus(s){
+      const map = {
+        "pending": "Pendiente",
+        "in-progress": "En curso",
+        "completed": "Completada",
+        "blocked": "Bloqueada"
+      };
+      return map[s] || s || "—";
+    }
+
+    // =========================
+    // RENDER
+    // =========================
+    function renderSelector(){
+      const keys = Object.keys(projects);
+      if (!keys.length) {
+        els.selector.innerHTML = `<option value="">(Sin proyectos)</option>`;
+        els.selector.disabled = true;
+        return;
+      }
+
+      els.selector.disabled = false;
+      els.selector.innerHTML = keys
+        .map(k => `<option value="${k}">${projects[k]?.meta?.name || k}</option>`)
+        .join("");
+
+      // Selección actual
+      if (!currentProjectKey || !projects[currentProjectKey]) currentProjectKey = keys[0];
+      els.selector.value = currentProjectKey;
+
+      // IMPORTANTÍSIMO: no acumular listeners si render se llama más de una vez
+      els.selector.onchange = () => {
+        currentProjectKey = els.selector.value;
+        console.log("[selector] cambio a:", currentProjectKey);
+        renderAll();
+      };
+    }
+
+    function renderMeta(){
+      const p = projects[currentProjectKey];
+      const m = p?.meta || {};
+
+      els.phTitle.textContent = m.name || currentProjectKey || "—";
+      els.phSub.textContent   = m.subtitle || "—";
+      els.phBadge.textContent = m.statusLabel || "—";
+
+      els.infoClient.textContent = m.client || "—";
+      els.infoAmount.textContent = m.amount || "—";
+      els.infoStart.textContent  = m.start || "—";
+      els.infoEnd.textContent    = m.end || "—";
+      els.infoPM.textContent     = m.pm || "—";
+
+      updateProjectInfoButton(currentProjectKey);
+    }
+
+    function renderTasks(){
+      const p = projects[currentProjectKey];
+      const tasks = (p?.tasks || []);
+
+      if (!tasks.length){
+        els.tasksList.innerHTML = `<div class="muted">No hay tareas.</div>`;
+        return;
+      }
+
+      els.tasksList.innerHTML = tasks.map(t => `
+        <div class="task ${t.status || "pending"}">
+          <div class="task-top">
+            <div class="task-name">${escapeHtml(t.name || "—")}</div>
+            <div class="task-status">${escapeHtml(labelForStatus(t.status))}</div>
+          </div>
+          <div class="task-desc">${escapeHtml(t.description || "")}</div>
+          <div class="task-meta">
+            <span class="pill"><i class="fa-solid fa-user"></i> ${escapeHtml(t.owner || "—")}</span>
+            <span class="pill"><i class="fa-solid fa-calendar"></i> ${escapeHtml((t.startDate||"—") + " → " + (t.endDate||"—"))}</span>
+            ${t.recordId ? `<span class="pill"><i class="fa-solid fa-id-card"></i> ${escapeHtml(t.recordId)}</span>` : ``}
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function renderTeam(){
+      const p = projects[currentProjectKey];
+      const team = (p?.team || []);
+      if (!team.length){
+        els.teamList.innerHTML = `<div class="muted">Sin equipo.</div>`;
+        return;
+      }
+      els.teamList.innerHTML = team.map(m => `
+        <div style="padding:10px 0;border-bottom:1px solid var(--line)">
+          <div style="font-weight:900">${escapeHtml(m.name || "—")}</div>
+          <div class="muted">${escapeHtml(m.role || "—")}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderCritical(){
+      const p = projects[currentProjectKey];
+      const list = (p?.critical || []);
+      if (!list.length){
+        els.criticalList.innerHTML = `<div class="muted">Sin riesgos cargados.</div>`;
+        return;
+      }
+      els.criticalList.innerHTML = list.map(x => `
+        <div style="padding:10px 12px;border-radius:12px;background:#fff5f5;border-left:5px solid #ef4444;margin-bottom:10px;font-weight:800">
+          ${escapeHtml(String(x || ""))}
+        </div>
+      `).join("");
+    }
+
+    function renderAll(){
+      renderSelector();
+      renderMeta();
+      renderTasks();
+      renderTeam();
+      renderCritical();
+    }
+
+    // =========================
+    // BACKEND
+    // =========================
+    async function loadFromBackend(){
+      const r = await fetch("/.netlify/functions/airtable", { cache: "no-store" });
+      const text = await r.text();
+      if (!r.ok) throw new Error(`Backend ${r.status}: ${text}`);
+      let data;
+      try { data = JSON.parse(text); } catch { throw new Error("Respuesta no es JSON: " + text.slice(0, 120)); }
+      if (!data?.projects) throw new Error("Respuesta inválida: falta projects");
+      return data.projects;
+    }
+
+    // =========================
+    // NETLIFY IDENTITY
+    // =========================
+    function setupIdentity(){
+      if (!window.netlifyIdentity) {
+        console.warn("[identity] widget no cargó; modo abierto.");
+        // Igual arrancamos
+        boot();
+        return;
+      }
+
+      // IMPORTANTE: el widget NO abre solo, hay que init + open
+      window.netlifyIdentity.init();
+
+      els.btnLogout.onclick = () => {
+        try { window.netlifyIdentity.logout(); } catch(e){ console.warn(e); }
+      };
+
+      window.netlifyIdentity.on("init", (user) => {
+        console.log("[identity] init user:", !!user);
+        if (user) {
+          boot();
+        } else {
+          window.netlifyIdentity.open();
+        }
+      });
+
+      window.netlifyIdentity.on("login", () => {
+        console.log("[identity] login");
+        window.netlifyIdentity.close();
+        boot();
+      });
+
+      window.netlifyIdentity.on("logout", () => {
+        console.log("[identity] logout");
+        // Opcional: limpiar UI
+        toast(false, "Sesión cerrada");
+        window.netlifyIdentity.open();
+      });
+    }
+
+    // =========================
+    // BOOT
+    // =========================
+    async function boot(){
+      console.log("[boot] arrancando…");
+      try {
+        projects = await loadFromBackend();
+        const keys = Object.keys(projects);
+        currentProjectKey = keys[0] || null;
+        toast(true, "Conectado a Airtable");
+        console.log("[boot] proyectos cargados:", keys);
+      } catch (e) {
+        console.error("[boot] error backend:", e);
+        toast(false, "No se pudo cargar Airtable (revisá function / env vars)");
+        projects = {};
+        currentProjectKey = null;
+      }
+      renderAll();
+    }
+
+    // =========================
+    // SAFE HTML
+    // =========================
+    function escapeHtml(str){
+      return String(str ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    // =========================
+    // START
+    // =========================
+    document.addEventListener("DOMContentLoaded", () => {
+      cacheEls();
+      console.log("[page] DOMContentLoaded");
+      setupIdentity();
+    });
+  </script>
+</body>
+</html>
