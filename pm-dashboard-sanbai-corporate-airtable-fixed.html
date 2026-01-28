@@ -357,6 +357,44 @@ function requireLoginThenBoot() {
   }
 
     
+async function createTaskInAirtable(task) {
+  const r = await fetch("/.netlify/functions/airtable/tasks", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      projectKey: currentProjectKey,
+      name: task.name,
+      description: task.description,
+      owner: task.owner,
+      status: task.status,
+      progress: task.progress,
+      startDate: task.startDate,
+      endDate: task.endDate
+    })
+  });
+  const data = await r.json();
+  if (!r.ok || !data.ok) throw new Error(data?.error ? JSON.stringify(data.error) : "Error creando task");
+  return data.record; // Airtable response
+}
+
+async function updateTaskInAirtable(recordId, task) {
+  const r = await fetch(`/.netlify/functions/airtable/tasks/${recordId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: task.name,
+      description: task.description,
+      owner: task.owner,
+      status: task.status,
+      progress: task.progress,
+      startDate: task.startDate,
+      endDate: task.endDate
+    })
+  });
+  const data = await r.json();
+  if (!r.ok || !data.ok) throw new Error(data?.error ? JSON.stringify(data.error) : "Error actualizando task");
+  return data.record;
+}
 
 
   // Importante: inicializar el widget una vez
@@ -767,33 +805,58 @@ sortTasksByDate(currentProject.tasks || []).forEach(task => {
             document.getElementById('taskModal').classList.add('active');
         }
 
-        function saveTask() {
-            const taskData = {
-                name: document.getElementById('taskName').value,
-                description: document.getElementById('taskDesc').value,
-                owner: document.getElementById('taskOwner').value,
-                status: document.getElementById('taskStatus').value,
-                startDate: document.getElementById('taskStart').value,
-                endDate: document.getElementById('taskEnd').value,
-                progress: parseInt(document.getElementById('taskProgress').value)
-            };
+        async function saveTask() {
+  const taskData = {
+    name: document.getElementById('taskName').value,
+    description: document.getElementById('taskDesc').value,
+    owner: document.getElementById('taskOwner').value,
+    status: document.getElementById('taskStatus').value,
+    startDate: document.getElementById('taskStart').value,
+    endDate: document.getElementById('taskEnd').value,
+    progress: parseInt(document.getElementById('taskProgress').value || "0", 10)
+  };
 
-            if (editingTaskId) {
-                const task = currentProject.tasks.find(t => t.id === editingTaskId);
-                Object.assign(task, taskData);
-            } else {
-                taskData.id = currentProject.tasks.length + 1;
-                currentProject.tasks.push(taskData);
+  try {
+    // EDIT
+    if (editingTaskId) {
+      const task = currentProject.tasks.find(t => t.id === editingTaskId);
+      if (!task) throw new Error("Task no encontrada");
 
-            }
-            persistProjects();
+      // Si ya viene de Airtable, debería tener recordId
+      if (task.recordId) {
+        await updateTaskInAirtable(task.recordId, taskData);
+      } else {
+        // si era local, la creamos en Airtable y guardamos recordId
+        const created = await createTaskInAirtable(taskData);
+        task.recordId = created.id;
+      }
 
+      Object.assign(task, taskData);
+    } else {
+      // CREATE
+      const created = await createTaskInAirtable(taskData);
 
-            closeModal();
-            renderTasks();
-            renderGantt();
-            updateMetrics();
-        }
+      // guardamos en el array local + recordId para updates futuros
+      taskData.id = (currentProject.tasks?.reduce((m,t)=>Math.max(m, t.id||0), 0) || 0) + 1;
+      taskData.recordId = created.id;
+
+      currentProject.tasks.push(taskData);
+    }
+
+    // refrescar UI
+    persistProjects();
+    closeModal();
+    renderTasks();
+    renderGantt();
+    updateMetrics();
+    showConnectionStatus(true, "Guardado en Airtable");
+  } catch (e) {
+    console.error(e);
+    showConnectionStatus(false, "No se pudo guardar en Airtable (ver consola)");
+    alert("Error guardando en Airtable. Revisá consola y configuración de la function.");
+  }
+}
+
 
         function exportGantt() {
             const data = JSON.stringify(currentProject, null, 2);
