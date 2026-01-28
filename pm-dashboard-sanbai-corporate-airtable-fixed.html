@@ -356,28 +356,6 @@ function requireLoginThenBoot() {
     return;
   }
 
-async function createTaskRemote(task) {
-  const r = await fetch("/.netlify/functions/airtable/tasks", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ projectKey: currentProjectKey, ...task }),
-  });
-  const data = await r.json();
-  if (!r.ok || !data.ok) throw new Error(data?.error || "Error creando task");
-  return data.record; // Airtable record
-}
-
-async function updateTaskRemote(recordId, task) {
-  const r = await fetch(`/.netlify/functions/airtable/tasks/${recordId}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(task),
-  });
-  const data = await r.json();
-  if (!r.ok || !data.ok) throw new Error(data?.error || "Error actualizando task");
-  return data.record;
-}
-
     
 async function createTaskInAirtable(task) {
   const r = await fetch("/.netlify/functions/airtable/tasks", {
@@ -827,7 +805,7 @@ sortTasksByDate(currentProject.tasks || []).forEach(task => {
             document.getElementById('taskModal').classList.add('active');
         }
 
-    async function saveTask() {
+        async function saveTask() {
   const taskData = {
     name: document.getElementById('taskName').value,
     description: document.getElementById('taskDesc').value,
@@ -835,48 +813,35 @@ sortTasksByDate(currentProject.tasks || []).forEach(task => {
     status: document.getElementById('taskStatus').value,
     startDate: document.getElementById('taskStart').value,
     endDate: document.getElementById('taskEnd').value,
-    progress: parseInt(document.getElementById('taskProgress').value || "0", 10),
+    progress: parseInt(document.getElementById('taskProgress').value || "0", 10)
   };
 
   try {
+    // EDIT
     if (editingTaskId) {
       const task = currentProject.tasks.find(t => t.id === editingTaskId);
       if (!task) throw new Error("Task no encontrada");
 
-      // si viene de Airtable, tiene recordId
+      // Si ya viene de Airtable, debería tener recordId
       if (task.recordId) {
-        await updateTaskRemote(task.recordId, taskData);
+        await updateTaskInAirtable(task.recordId, taskData);
       } else {
-        // si era local, la creamos remoto
-        const created = await createTaskRemote(taskData);
+        // si era local, la creamos en Airtable y guardamos recordId
+        const created = await createTaskInAirtable(taskData);
         task.recordId = created.id;
       }
 
       Object.assign(task, taskData);
     } else {
-      const created = await createTaskRemote(taskData);
+      // CREATE
+      const created = await createTaskInAirtable(taskData);
 
-      // id local para tu UI (no es el recordId)
-      const nextId = (currentProject.tasks || []).reduce((m, t) => Math.max(m, t.id || 0), 0) + 1;
-      currentProject.tasks.push({
-        ...taskData,
-        id: nextId,
-        recordId: created.id,
-      });
+      // guardamos en el array local + recordId para updates futuros
+      taskData.id = (currentProject.tasks?.reduce((m,t)=>Math.max(m, t.id||0), 0) || 0) + 1;
+      taskData.recordId = created.id;
+
+      currentProject.tasks.push(taskData);
     }
-
-    closeModal();
-    renderTasks();
-    renderGantt();
-    updateMetrics();
-    showConnectionStatus(true, "Guardado en Airtable");
-  } catch (e) {
-    console.error(e);
-    showConnectionStatus(false, "No se pudo guardar en Airtable");
-    alert("Error guardando en Airtable. Revisá consola / function.");
-  }
-}
-
 
     // refrescar UI
     persistProjects();
