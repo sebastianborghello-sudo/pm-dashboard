@@ -475,6 +475,27 @@
   </div>
 
   <script>
+const PROJECT_INFO_LINKS = {
+  macro_lan: "https://sanbai-pm-dashboard.netlify.app/proyecto-macro-dashboard-sanbai.html",
+  storage_backup: "https://sanbai-pm-dashboard.netlify.app/proyecto-storage-backup-dashboard-sanbai.html",
+};
+
+function updateProjectInfoButton(projectKey) {
+  const btn = document.getElementById("btnProjectInfo");
+  if (!btn) return;
+
+  const url = PROJECT_INFO_LINKS[projectKey];
+
+  if (url) {
+    btn.href = url;
+    btn.style.display = "inline-flex";
+  } else {
+    btn.href = "#";
+    btn.style.display = "none";
+  }
+}
+
+    
     function requireLoginThenBoot() {
       if (!window.netlifyIdentity) {
         // Si por algún motivo no cargó el widget, arrancamos igual (modo abierto)
@@ -561,6 +582,7 @@
       sel.addEventListener("change", () => {
         currentProjectKey = sel.value;
         currentProject = projects[currentProjectKey];
+        
         persistProjects();
 
         currentTab = "all";
@@ -576,6 +598,7 @@
         renderTeam();
         renderCritical();
         updateMetrics();
+         updateProjectInfoButton(currentProjectKey);
       });
     }
 
@@ -628,7 +651,7 @@
       },
 
       // Ejemplo 2
-      core_storage: {
+      storage_backup: {
         meta: {
           name: "Banco Macro - Core Storage",
           subtitle: "Actualización y expansión de almacenamiento",
@@ -667,6 +690,7 @@
       renderTeam();
       renderCritical();
       updateMetrics();
+       updateProjectInfoButton(currentProjectKey);
 
       document.querySelectorAll(".tab").forEach((tab) => {
         tab.addEventListener("click", function () {
