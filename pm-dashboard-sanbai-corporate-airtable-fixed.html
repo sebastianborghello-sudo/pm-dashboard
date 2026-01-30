@@ -446,12 +446,12 @@ body.pdf-mode .gantt-container {
 
         <div class="form-group">
           <label class="form-label">Concepto</label>
-          <input type="text" class="form-input" id="cfConcept" placeholder="Ej: Cobro hito entrega / Pago proveedor" required>
+          <input type="text" class="form-input" id="cfType" placeholder="Ej: Cobro hito entrega / Pago proveedor" required>
         </div>
 
         <div class="form-group">
           <label class="form-label">Contraparte</label>
-          <input type="text" class="form-input" id="cfCounterparty" placeholder="Ej: Banco Macro / Intermaco / Qualix">
+          <input type="text" class="form-input" id="cfParty" placeholder="Ej: Banco Macro / Intermaco / Qualix">
         </div>
 
         <div class="form-group" style="display:grid; grid-template-columns: 1fr 140px; gap:10px;">
@@ -1042,8 +1042,8 @@ function renderProjectSelector() {
   const cashflowModalTitle = document.getElementById("cashflowModalTitle");
   const cfDate = document.getElementById("cfDate");
   const cfType = document.getElementById("cfType");
-  const cfConcept = document.getElementById("cfConcept");
-  const cfCounterparty = document.getElementById("cfCounterparty");
+  const cfDescription = document.getElementById("cfdescription");
+  const cfParty = document.getElementById("cfParty");
   const cfAmount = document.getElementById("cfAmount");
   const cfCurrency = document.getElementById("cfCurrency");
   const cfStatus = document.getElementById("cfStatus");
@@ -1067,8 +1067,8 @@ function renderProjectSelector() {
 
     cfDate.value = normalizeCFDate(e.date);
     cfType.value = e.type || "Cobro";
-    cfConcept.value = e.concept || "";
-    cfCounterparty.value = e.counterparty || "";
+    cfDescription.value = e.description || "";
+    cfParty.value = e.party || "";
     cfAmount.value = e.amount ?? "";
     cfCurrency.value = e.currency || "USD";
     cfStatus.value = e.status || "Planificado";
@@ -1085,8 +1085,8 @@ function renderProjectSelector() {
     const payload = {
       date: cfDate.value,
       type: cfType.value,
-      concept: cfConcept.value.trim(),
-      counterparty: cfCounterparty.value.trim(),
+      description: cfDescription.value.trim(),
+      party: cfParty.value.trim(),
       amount: Number(cfAmount.value || 0),
       currency: cfCurrency.value,
       status: cfStatus.value,
