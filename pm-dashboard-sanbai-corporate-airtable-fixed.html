@@ -344,12 +344,7 @@ body.pdf-mode .gantt-container {
               <div class="metric-label">Bloqueadores</div>
               <div class="metric-value" id="metricBlocked">—</div>
             </div>
-            <div class="card">
-  <div class="card-title">
-    <i class="fa-solid fa-money-bill-wave"></i> Cashflow
-  </div>
-  <div id="cashflowList"></div>
-</div>
+  
           </div>
         </div>
 
@@ -900,38 +895,30 @@ function renderProjectSelector() {
     });
   }
 
-  function renderCashflow() {
-    const container = document.getElementById("cashflowList");
-    if (!container) return;
+ function renderCashflow() {
+  const container = document.getElementById("cashflowList");
+  const items = currentProject.cashflow || [];
 
-    const list = sortCashflow(currentProject.cashflow || []);
-    if (!list.length) {
-      container.innerHTML = '<div style="padding:10px; color:#718096;">No hay eventos de cashflow</div>';
-      return;
-    }
-
-    container.innerHTML = list.map(e => {
-      const type = (e.type || "").toLowerCase();
-      const isCobro = type.includes("cobro");
-      const color = isCobro ? "#16a34a" : "#dc2626";
-      const sign = isCobro ? "+" : "-";
-      const amount = Number(e.amount || 0);
-      const amountStr = isFinite(amount) ? amount.toLocaleString(undefined, { maximumFractionDigits: 2 }) : (e.amount || "0");
-      const date = normalizeCFDate(e.date);
-      const status = e.status ? ` · ${e.status}` : "";
-      const counter = e.counterparty ? ` · ${e.counterparty}` : "";
-
-      return `
-        <div class="critical-item" data-cf-id="${e.recordId || ""}" style="border-left-color:${color}; cursor:pointer;">
-          <strong style="display:flex;justify-content:space-between;align-items:center; gap:10px;">
-            <span>${date} · ${e.type || ""} · ${e.concept || ""}</span>
-            <span style="color:${color}">${sign} ${e.currency || "USD"} ${amountStr}</span>
-          </strong>
-          <div style="font-size:0.85em;color:#374151;margin-top:4px">${counter}${status}</div>
-        </div>
-      `;
-    }).join("");
+  if (!items.length) {
+    container.innerHTML = "<p style='color:#718096'>Sin movimientos</p>";
+    return;
   }
+
+  container.innerHTML = items
+    .sort((a,b) => a.date.localeCompare(b.date))
+    .map(c => `
+      <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #e5e7eb">
+        <div>
+          <strong>${c.type}</strong> – ${c.description}<br>
+          <small>${c.date} · ${c.status}</small>
+        </div>
+        <div style="font-weight:600; color:${c.type === 'Ingreso' ? '#16a34a' : '#dc2626'}">
+          ${c.type === 'Ingreso' ? '+' : '-'} USD ${c.amount.toLocaleString()}
+        </div>
+      </div>
+    `)
+    .join("");
+}
 
   function updateMetrics() {
     const tasks = currentProject.tasks || [];
