@@ -229,7 +229,7 @@ exports.handler = async (event) => {
           recordId: c.id,
           type: normalizeCashType(typeRaw),
           description: cf["Description"] || "",
-          Counterparty: cf["Counterparty"] ?? cf["Proveedor/Cliente"] ?? cf["Contraparte"] ?? "",
+          party: cf["Party"] ?? cf["Proveedor/Cliente"] ?? cf["Contraparte"] ?? "",
           amount: Number(amountRaw ?? 0),
           date: cf["Date"] ? new Date(cf["Date"]).toISOString().slice(0, 10) : (cf["Fecha"] ? new Date(cf["Fecha"]).toISOString().slice(0, 10) : ""),
           status: cf["Status"] ?? cf["Estado"] ?? "",
