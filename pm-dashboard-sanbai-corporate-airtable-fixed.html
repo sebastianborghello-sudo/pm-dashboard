@@ -1221,28 +1221,25 @@ function renderProjectSelector() {
   }
 
 async function boot() {
-  try {
-    const remoteProjects = await loadFromBackend(); // fetch /.netlify/functions/airtable
-    projects = remoteProjects;                      // <- CLAVE: reemplazar
-    showConnectionStatus(true, "Conectado a Airtable");
-  } catch (e) {
-    console.warn(e);
-    showConnectionStatus(false, "Sin conexión a Airtable (modo local)");
-    // fallback si querés: loadProjectsFromStorage();
-  }
+  const backendProjects = await loadFromBackend();
+  projects = backendProjects;
 
-  const keys = Object.keys(projects || {});
-  if (!keys.length) {
-    projects = {};
-    currentProjectKey = null;
-    currentProject = { meta: { name: "Sin proyectos", subtitle: "", statusLabel: "" }, tasks: [], team: [], critical: [] };
-  } else {
-    if (!currentProjectKey || !projects[currentProjectKey]) currentProjectKey = keys[0];
-    currentProject = projects[currentProjectKey];
-  }
+  currentProjectKey = Object.keys(projects)[0];
+  currentProject = projects[currentProjectKey];
 
-  init();
+  // 👇 lo que antes hacía init()
+  renderProjectSelector();
+  renderProjectMeta();
+  renderTasks();
+  renderGantt();
+  renderTeam();
+  renderCritical();
+  updateMetrics();
+  updateProjectInfoButton(currentProjectKey);
+
+  bindUIEvents(); // si existe
 }
+
 
 
   // IMPORTANTÍSIMO: esperar a window.load (asegura que netlify-identity-widget ya esté)
