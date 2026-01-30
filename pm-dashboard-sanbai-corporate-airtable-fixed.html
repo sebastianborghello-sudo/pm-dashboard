@@ -222,7 +222,9 @@
         <div class="card">
           <div class="card-header">
             <span class="card-title"><i class="fa-solid fa-chart-gantt"></i> Cronograma (Gantt)</span>
-            <button class="btn btn-white" onclick="exportGantt()"><i class="fa-solid fa-download"></i> Exportar</button>
+            <button class="btn btn-white" onclick="exportPDF()">
+  <i class="fa-solid fa-file-pdf"></i> Exportar PDF
+</button>
           </div>
           <div class="gantt-container" id="ganttChart"></div>
         </div>
@@ -299,6 +301,21 @@
       macro_lan: "https://sanbai-pm-dashboard.netlify.app/proyecto-macro-dashboard-sanbai.html",
       storage_backup: "https://sanbai-pm-dashboard.netlify.app/proyecto-storage-backup-dashboard-sanbai.html",
     };
+
+    function exportPDF() {
+  // Opcional: forzar tab "Todas" antes de imprimir
+  currentTab = 'all';
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  const allTab = document.querySelector('.tab[data-tab="all"]');
+  if (allTab) allTab.classList.add('active');
+  renderTasks();
+  renderGantt();
+  updateMetrics();
+
+  // Abre diálogo print (Chrome: Guardar como PDF)
+  window.print();
+}
+
 
     function updateProjectInfoButton(projectKey) {
       const btn = document.getElementById("btnProjectInfo");
