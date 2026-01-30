@@ -8,6 +8,9 @@
   <!-- Iconos -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
+  <!-- HTML2PDF (multipágina, mantiene look & feel) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
   <style>
     :root {
       --sanbai-orange: #F76B1C;
@@ -119,6 +122,47 @@
     }
 
     .submeta i { color: var(--sanbai-orange); margin-right: 8px; }
+
+    /* ===== Botón Export PDF (nuevo) ===== */
+    .header-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    .btn{
+      appearance: none;
+      border: 1px solid rgba(0,0,0,0.08);
+      background: #fff;
+      color: var(--ink);
+      padding: 9px 12px;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 0.9rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.06);
+      transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+      white-space: nowrap;
+    }
+
+    .btn:hover{
+      transform: translateY(-1px);
+      box-shadow: 0 12px 26px rgba(0,0,0,0.10);
+      border-color: rgba(0,0,0,0.14);
+    }
+
+    .btn-accent{
+      background: var(--ink);
+      color: #fff;
+      border-color: rgba(0,0,0,0.18);
+    }
+
+    .btn-accent i{ color: var(--sanbai-orange); }
 
     /* ===== Cards ===== */
     .grid {
@@ -516,12 +560,20 @@
       .meta { align-items: flex-start; }
       .badges { justify-content: flex-start; }
       .brand h1 { font-size: 1.35rem; }
+      .header-actions{ justify-content: flex-start; }
+    }
+
+    /* ===== Print / PDF ===== */
+    @media print{
+      body{ background: #fff; padding: 0; }
+      .header, .card{ box-shadow: none !important; }
+      .header-actions{ display:none !important; }
     }
   </style>
 </head>
 
 <body>
-  <div class="container">
+  <div class="container" id="pdfRoot">
 
     <div class="header card">
       <div class="header-top">
@@ -534,6 +586,13 @@
         </div>
 
         <div class="meta">
+          <div class="header-actions">
+            <button class="btn btn-accent" onclick="exportPDF()">
+              <i class="fa-solid fa-file-pdf"></i>
+              Exportar PDF
+            </button>
+          </div>
+
           <div class="badges">
             <span class="badge success"><i class="fa-solid fa-circle-check"></i> En ejecución</span>
             <span class="badge neutral"><i class="fa-solid fa-calendar"></i> Vigencia: 36 meses</span>
@@ -901,7 +960,6 @@
     }
 
     function formatUSD(n) {
-      // for display only
       return "USD " + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
@@ -912,20 +970,41 @@
       el.textContent = formatARSDate(new Date());
     })();
 
-    // === Animación barras ===
+    // === Animación barras + totales ===
     window.addEventListener('load', () => {
       document.querySelectorAll('.progress-fill').forEach(el => {
         const target = el.getAttribute('data-target') || '0';
         requestAnimationFrame(() => { el.style.width = target + '%'; });
       });
 
-      // Total OCs (Intermaco): OC10 + OC12
       const oc10 = 667014.73;
       const oc12 = 76755.61;
       const total = oc10 + oc12;
       const totalEl = document.getElementById("totalIntermaco");
       if (totalEl) totalEl.textContent = formatUSD(total);
     });
+
+    // === Export PDF (nuevo) ===
+    async function exportPDF(){
+      const root = document.getElementById('pdfRoot');
+      if (!root) return alert("No se encontró el contenedor para exportar.");
+
+      const opt = {
+        margin:       [10, 10, 10, 10],     // mm
+        filename:     `Proyecto_Torre_Macro_${new Date().toISOString().slice(0,10)}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak:    { mode: ['css','legacy'] }
+      };
+
+      try{
+        await html2pdf().set(opt).from(root).save();
+      }catch(e){
+        console.error(e);
+        alert("No se pudo exportar el PDF. Revisá consola.");
+      }
+    }
   </script>
 </body>
 </html>
