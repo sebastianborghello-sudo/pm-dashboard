@@ -6,6 +6,15 @@
   <title>Banco Macro - Storage Backup (STR) | Dashboard</title>
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <button
+  class="btn btn-white"
+  onclick="window.location.href='pm-dashboard-sanbai-corporate-airtable-fixed.html'">
+  <i class="fa-solid fa-arrow-left"></i> Volver al PM Dashboard
+</button>
+<button class="btn btn-white" onclick="exportPDF()">
+  <i class="fa-solid fa-file-pdf"></i> Exportar PDF
+</button>
+
 
   <style>
     :root {
@@ -452,6 +461,43 @@
       .badges { justify-content: flex-start; }
       .brand h1 { font-size: 1.35rem; }
     }
+    /* =========================
+   PDF MODE – INFO PROYECTO
+========================= */
+body.pdf-mode {
+  background: white;
+}
+
+body.pdf-mode .btn,
+body.pdf-mode .project-selector,
+body.pdf-mode #connStatus {
+  display: none !important;
+}
+
+body.pdf-mode .container {
+  max-width: none;
+  padding: 0;
+}
+
+body.pdf-mode .card,
+body.pdf-mode section,
+body.pdf-mode .block {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+@page {
+  size: A4 portrait; /* este suele quedar mejor para info proyecto */
+  margin: 12mm;
+}
+
+@media print {
+  html, body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
   </style>
 </head>
 
@@ -854,6 +900,23 @@
       const el = document.getElementById('lastUpdated');
       if (el) el.textContent = `${dd}/${mm}/${yyyy}`;
     })();
+function exportPDF() {
+  // Activar modo PDF
+  document.body.classList.add("pdf-mode");
+
+  // Esperar a que el browser recalcule layout
+  setTimeout(() => {
+    window.print();
+
+    // Volver a modo normal
+    setTimeout(() => {
+      document.body.classList.remove("pdf-mode");
+    }, 500);
+  }, 300);
+}
+
   </script>
+
+  
 </body>
 </html>
