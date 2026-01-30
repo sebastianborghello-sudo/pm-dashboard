@@ -149,6 +149,68 @@
     .metric-card.metric-bad{ background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%); }
 
     .avatar{ background: linear-gradient(135deg, var(--sanbai-dark) 0%, var(--sanbai-gray) 100%); }
+ 
+    @page {
+  size: A4 landscape;
+  margin: 10mm;
+}
+
+html, body {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+    /* =========================
+   PDF MODE
+========================= */
+body.pdf-mode {
+  background: white;
+}
+
+body.pdf-mode .btn,
+body.pdf-mode .project-selector,
+body.pdf-mode .tabs,
+body.pdf-mode .modal,
+body.pdf-mode #connStatus {
+  display: none !important;
+}
+
+body.pdf-mode .container {
+  max-width: none;
+  padding: 0;
+}
+
+body.pdf-mode .main-content {
+  grid-template-columns: 1fr !important;
+}
+
+body.pdf-mode .right-panel {
+  margin-top: 24px;
+}
+
+body.pdf-mode .card,
+body.pdf-mode .task-item,
+body.pdf-mode .team-member,
+body.pdf-mode .critical-item {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+body.pdf-mode .gantt-container {
+  overflow: visible !important;
+}
+
+@page {
+  size: A4 landscape;
+  margin: 10mm;
+}
+
+@media print {
+  html, body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
 
     @media print{
       .top-bar{ box-shadow:none; }
@@ -159,7 +221,25 @@
       .project-header{ box-shadow:none; border:1px solid #e5e7eb; border-left: 6px solid var(--sanbai-orange); }
       .main-content{ grid-template-columns: 1fr; }
       .right-panel{ break-before: page; }
+       /* Ocultar UI interactiva + overlays */
+  .btn, .project-selector, .tabs, .modal { display: none !important; }
+  #connStatus { display: none !important; } /* <- clave (tu toast) */
+  
+  /* Evitar cortes feos */
+  .card, .task-item, .team-member, .critical-item {
+    break-inside: avoid;
+    page-break-inside: avoid;
     }
+        /* Que el layout sea “reporte” */
+  body { background: white !important; }
+  .container { max-width: none; padding: 0; }
+  .main-content { grid-template-columns: 1fr !important; }
+  .right-panel { break-before: page; }
+
+  /* Gantt: que no corte por overflow */
+  .gantt-container { overflow: visible !important; }
+  .gantt-chart { min-width: 0 !important; }
+}
   </style>
 </head>
 
@@ -302,19 +382,28 @@
       storage_backup: "https://sanbai-pm-dashboard.netlify.app/proyecto-storage-backup-dashboard-sanbai.html",
     };
 
-    function exportPDF() {
-  // Opcional: forzar tab "Todas" antes de imprimir
+function exportPDF() {
+  // 1. Forzar vista limpia
+  document.body.classList.add("pdf-mode");
+
+  // 2. Asegurar estado consistente
   currentTab = 'all';
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  const allTab = document.querySelector('.tab[data-tab="all"]');
-  if (allTab) allTab.classList.add('active');
   renderTasks();
   renderGantt();
   updateMetrics();
 
-  // Abre diálogo print (Chrome: Guardar como PDF)
-  window.print();
+  // 3. Esperar reflow del layout
+  setTimeout(() => {
+    window.print();
+
+    // 4. Volver a modo normal
+    setTimeout(() => {
+      document.body.classList.remove("pdf-mode");
+    }, 500);
+
+  }, 400);
 }
+
 
 
     function updateProjectInfoButton(projectKey) {
