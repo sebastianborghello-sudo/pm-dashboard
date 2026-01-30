@@ -264,9 +264,10 @@ body.pdf-mode .gantt-container {
         <i class="fa-solid fa-file-pdf"></i> Exportar PDF
       </button>
 
-      <button id="btnLogout" class="btn btn-white" type="button" style="display:none" title="Cerrar sesión">
-        <i class="fa-solid fa-right-from-bracket"></i> Logout
-      </button>
+     <button class="btn btn-white" onclick="netlifyIdentity.logout()" title="Cerrar sesión">
+  🔒 Logout
+</button>
+
 
       <select id="projectSelector"></select>
     </div>
@@ -509,6 +510,24 @@ body.pdf-mode .gantt-container {
     }
   }
 
+    function editTask(recordId) {
+  const task = (currentProject.tasks || []).find(t => t.recordId === recordId);
+  if (!task) return;
+
+  editingTaskRecordId = recordId;
+
+  taskName.value = task.name || "";
+  taskDesc.value = task.description || "";
+  taskOwner.value = task.owner || "";
+  taskStatus.value = task.status || "pending";
+  taskStart.value = task.startDate || "";
+  taskEnd.value = task.endDate || "";
+  taskProgress.value = task.progress ?? 0;
+
+  taskModal.classList.add("active");
+}
+
+
   // ===== Estado global =====
   let identityUser = null;
   let projects = {};
@@ -651,29 +670,39 @@ body.pdf-mode .gantt-container {
   }
 
   // ===== Render =====
-  function renderProjectSelector() {
-    const sel = document.getElementById("projectSelector");
-    if (!sel) return;
+function renderProjectSelector() {
+  const sel = document.getElementById("projectSelector");
+  if (!sel) return;
 
-    sel.innerHTML = Object.entries(projects)
-      .map(([key, p]) => `<option value="${key}">${p?.meta?.name || key}</option>`)
-      .join("");
+  sel.innerHTML = Object.entries(projects)
+    .map(([key, p]) => `<option value="${key}">${p?.meta?.name || key}</option>`)
+    .join("");
 
-    sel.value = currentProjectKey || "";
-
-    sel.onchange = () => {
-      currentProjectKey = sel.value;
-      saveSelectedProject(currentProjectKey);
-      currentProject = ensureProjectShape(projects[currentProjectKey]);
-
-      currentTab = "all";
-      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-      const tAll = document.querySelector('.tab[data-tab="all"]');
-      if (tAll) tAll.classList.add("active");
-
-      renderAll();
-    };
+  if (!currentProjectKey || !projects[currentProjectKey]) {
+    currentProjectKey = Object.keys(projects)[0];
   }
+
+  sel.value = currentProjectKey;
+
+  sel.onchange = () => {
+    currentProjectKey = sel.value;
+    currentProject = projects[currentProjectKey];
+
+    currentTab = "all";
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    const allTab = document.querySelector('.tab[data-tab="all"]');
+    if (allTab) allTab.classList.add("active");
+
+    renderProjectMeta();
+    renderTasks();
+    renderGantt();
+    renderTeam();
+    renderCritical();
+    updateMetrics();
+    updateProjectInfoButton(currentProjectKey);
+  };
+}
+
 
   function renderProjectMeta() {
     const h2 = document.querySelector(".project-header h2");
@@ -713,37 +742,39 @@ body.pdf-mode .gantt-container {
   }
 
   function renderTasks() {
-    const container = document.getElementById("tasksList");
-    if (!container) return;
+  const container = document.getElementById("tasksList");
 
-    let tasks = sortTasksByDate(currentProject.tasks || []);
-    if (currentTab !== "all") tasks = tasks.filter(t => t.status === currentTab);
-
-    if (!tasks.length) {
-      container.innerHTML = '<div style="text-align:center; padding:40px; color:#718096;">No hay tareas</div>';
-      return;
-    }
-
-    const colors = { pending:"#e89e3c", "in-progress":"#003d82", completed:"#48bb78", blocked:"#f56565" };
-    const labels = { pending:"Pendiente", "in-progress":"En Curso", completed:"Completada", blocked:"Bloqueada" };
-
-    container.innerHTML = tasks.map(t => `
-      <div class="task-item ${t.status || ""}" data-record-id="${t.recordId || ""}">
-        <div class="task-header">
-          <div class="task-title">${t.name || ""}</div>
-          <div class="task-status" style="background:${colors[t.status] || "#003d82"}; color:white;">
-            ${labels[t.status] || t.status || ""}
-          </div>
-        </div>
-        <div style="color:#718096; font-size:0.9em; margin:5px 0;">${t.description || ""}</div>
-        <div class="task-meta">
-          <div class="task-meta-item"><i class="fa-solid fa-user"></i><span>${t.owner || ""}</span></div>
-          <div class="task-meta-item"><i class="fa-solid fa-calendar"></i><span>${t.startDate || ""} - ${t.endDate || ""}</span></div>
-        </div>
-        <div class="progress-bar"><div class="progress-fill" style="width:${Number(t.progress||0)}%"></div></div>
-      </div>
-    `).join("");
+  let tasks = sortTasksByDate(currentProject.tasks || []);
+  if (currentTab !== "all") {
+    tasks = tasks.filter(t => t.status === currentTab);
   }
+
+  if (!tasks.length) {
+    container.innerHTML = `<div style="padding:20px;color:#718096">No hay tareas</div>`;
+    return;
+  }
+
+  container.innerHTML = tasks.map(task => `
+    <div class="task-item ${task.status}"
+         onclick="editTask('${task.recordId}')">
+
+      <div class="task-header">
+        <div class="task-title">${task.name}</div>
+        <div class="task-status">${task.status}</div>
+      </div>
+
+      <div class="task-meta">
+        <span>${task.owner || "-"}</span>
+        <span>${task.startDate || ""} → ${task.endDate || ""}</span>
+      </div>
+
+      <div class="progress-bar">
+        <div class="progress-fill" style="width:${task.progress || 0}%"></div>
+      </div>
+    </div>
+  `).join("");
+}
+
 
   function parseISODateUTC(iso) {
     const [y,m,d] = iso.split("-").map(Number);
@@ -1189,51 +1220,35 @@ body.pdf-mode .gantt-container {
     });
   }
 
-  async function boot() {
-    bindUIEvents();
-
-    // Cargar desde Airtable y render inicial
-    await refreshAndRender();
-    applyAuthUI();
+async function boot() {
+  try {
+    const remoteProjects = await loadFromBackend(); // fetch /.netlify/functions/airtable
+    projects = remoteProjects;                      // <- CLAVE: reemplazar
+    showConnectionStatus(true, "Conectado a Airtable");
+  } catch (e) {
+    console.warn(e);
+    showConnectionStatus(false, "Sin conexión a Airtable (modo local)");
+    // fallback si querés: loadProjectsFromStorage();
   }
 
-  function requireLoginThenBoot() {
-    if (!window.netlifyIdentity) {
-      // Si no está identity, arrancamos igual (modo view)
-      identityUser = null;
-      boot();
-      return;
-    }
-
-    window.netlifyIdentity.init();
-
-    window.netlifyIdentity.on("init", async (user) => {
-      identityUser = user || null;
-      applyAuthUI();
-
-      if (identityUser) {
-        await boot();
-      } else {
-        // Pedir login, pero igual mostramos dashboard en modo view
-        await boot();
-        window.netlifyIdentity.open();
-      }
-    });
-
-    window.netlifyIdentity.on("login", async (user) => {
-      identityUser = user || null;
-      window.netlifyIdentity.close();
-      applyAuthUI();
-      await refreshAndRender();
-    });
-
-    window.netlifyIdentity.on("logout", async () => {
-      identityUser = null;
-      applyAuthUI();
-      await refreshAndRender();
-      window.netlifyIdentity.open();
-    });
+  const keys = Object.keys(projects || {});
+  if (!keys.length) {
+    projects = {};
+    currentProjectKey = null;
+    currentProject = { meta: { name: "Sin proyectos", subtitle: "", statusLabel: "" }, tasks: [], team: [], critical: [] };
+  } else {
+    if (!currentProjectKey || !projects[currentProjectKey]) currentProjectKey = keys[0];
+    currentProject = projects[currentProjectKey];
   }
+
+  init();
+}
+
+
+  // IMPORTANTÍSIMO: esperar a window.load (asegura que netlify-identity-widget ya esté)
+  window.addEventListener("load", startApp);
+</script>
+
 
   // Start
   document.addEventListener("DOMContentLoaded", requireLoginThenBoot);
