@@ -225,11 +225,11 @@ exports.handler = async (event) => {
         const typeRaw = cf["Type"] ?? cf["Movimiento"] ?? cf["Flow"] ?? cf["Direction"];
         const amountRaw = cf["Amount"] ?? cf["Monto"] ?? 0;
 
-        projects[projectKey].cashflow.push({
+        party.push({
           recordId: c.id,
           type: normalizeCashType(typeRaw),
-          concept: cf["Concept"] ?? cf["Concepto"] ?? "",
-          party: cf["Party"] ?? cf["Proveedor/Cliente"] ?? cf["Contraparte"] ?? "",
+          description: cf["Description"] || "",
+          Counterparty: cf["Counterparty"] ?? cf["Proveedor/Cliente"] ?? cf["Contraparte"] ?? "",
           amount: Number(amountRaw ?? 0),
           date: cf["Date"] ? new Date(cf["Date"]).toISOString().slice(0, 10) : (cf["Fecha"] ? new Date(cf["Fecha"]).toISOString().slice(0, 10) : ""),
           status: cf["Status"] ?? cf["Estado"] ?? "",
