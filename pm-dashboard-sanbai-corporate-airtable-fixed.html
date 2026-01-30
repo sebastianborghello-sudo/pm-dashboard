@@ -336,6 +336,20 @@ body.pdf-mode .gantt-container {
       </div>
     </div>
   </div>
+  
+  <div class="card">
+  <div class="card-header">
+    <span class="card-title">
+      <i class="fa-solid fa-money-bill-wave"></i> Fechas clave / Cashflow
+    </span>
+    <button class="btn btn-primary" onclick="showCashflowModal()">
+      <i class="fa-solid fa-plus"></i>
+    </button>
+  </div>
+
+  <div id="cashflowList" class="critical-list"></div>
+</div>
+
 
   <div id="taskModal" class="modal">
     <div class="modal-content">
@@ -520,6 +534,49 @@ function exportPDF() {
         renderGantt();
         renderTeam();
         renderCritical();
+        renderCashflow();
+
+function renderCashflow() {
+  const container = document.getElementById("cashflowList");
+  if (!container) return;
+
+  const events = (currentProject.cashflow || [])
+    .filter(e => e.date)
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
+    .slice(0, 6);
+
+  if (!events.length) {
+    container.innerHTML =
+      '<div style="padding:12px;color:#718096;">Sin eventos financieros</div>';
+    return;
+  }
+
+  container.innerHTML = events.map(e => {
+    const isCobro = e.type === "Cobro";
+    const color = isCobro ? "#16a34a" : "#dc2626";
+    const sign = isCobro ? "+" : "−";
+
+    return `
+      <div class="critical-item" style="border-left-color:${color}">
+        <strong style="display:flex;justify-content:space-between;align-items:center">
+          <span>${e.date} · ${e.type}</span>
+          <span style="color:${color}">
+            ${sign} ${e.currency} ${Number(e.amount).toLocaleString()}
+          </span>
+        </strong>
+        <div style="font-size:0.85em;color:#374151;margin-top:4px">
+          ${e.counterparty || ""} · ${e.status || ""}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function showCashflowModal() {
+  alert("Próximo paso: crear / editar eventos de cashflow");
+}
+
+        
         updateMetrics();
         updateProjectInfoButton(currentProjectKey);
       };
@@ -864,6 +921,7 @@ function exportPDF() {
       renderGantt();
       renderTeam();
       renderCritical();
+      renderCashflow();
       updateMetrics();
       updateProjectInfoButton(currentProjectKey);
 
