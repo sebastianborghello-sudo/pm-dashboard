@@ -393,4 +393,3 @@ const apiList = (table) =>
     };
   }
 };
-
