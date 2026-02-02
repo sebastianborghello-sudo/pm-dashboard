@@ -1300,30 +1300,29 @@ function applyAuthUI(user) {
 
 
 function requireLoginThenBoot() {
-  if (!window.netlifyIdentity) {
-    console.warn("Netlify Identity no cargó");
-    return;
-  }
+  if (!window.netlifyIdentity) return boot(); // modo abierto
 
-  netlifyIdentity.init();
+  window.netlifyIdentity.init();
 
-  netlifyIdentity.on("init", user => {
-    if (user) {
-      boot(); // 👈 acá, sin await
-    } else {
-      netlifyIdentity.open();
-    }
+  window.netlifyIdentity.on("init", (user) => {
+    identityUser = user;
+    if (user) boot();
+    else window.netlifyIdentity.open();
   });
 
-  netlifyIdentity.on("login", () => {
-    netlifyIdentity.close();
-    boot(); // 👈 acá también
+  window.netlifyIdentity.on("login", (user) => {
+    identityUser = user;
+    window.netlifyIdentity.close();
+    boot();
   });
 
-  netlifyIdentity.on("logout", () => {
-    location.reload();
+  window.netlifyIdentity.on("logout", () => {
+    identityUser = null;
+    window.netlifyIdentity.open();
   });
 }
+
+document.addEventListener("DOMContentLoaded", requireLoginThenBoot);
 
 
 // Start
