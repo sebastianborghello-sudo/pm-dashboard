@@ -1299,7 +1299,7 @@ function applyAuthUI(user) {
 }
 
 
-function requireLoginThenBoot() {
+async function requireLoginThenBoot() {
   if (!window.netlifyIdentity) {
     console.warn("Netlify Identity widget no cargó. Iniciando sin login.");
     await boot();
