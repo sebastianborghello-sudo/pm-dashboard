@@ -602,7 +602,7 @@ async function requireLoginThenStart() {
   window.netlifyIdentity.on("init", async (user) => {
     identityUser = user || null;
     if (identityUser) {
-      await startApp();
+    //  await startApp();
     } else {
       window.netlifyIdentity.open(); // show login modal
     }
@@ -611,7 +611,7 @@ async function requireLoginThenStart() {
   window.netlifyIdentity.on("login", async (user) => {
     identityUser = user || null;
     window.netlifyIdentity.close();
-   await startApp();
+  // await startApp();
   });
 
   window.netlifyIdentity.on("logout", () => {
@@ -1109,7 +1109,7 @@ window.exportGantt = exportGantt;
       const u = identity.currentUser();
       if (u) {
         console.log("[Auth] user activo:", u.email || u.id);
-        await boot(); // <-- tu arranque real
+        await startApp(); // <-- tu arranque real
         return;
       }
 
@@ -1117,7 +1117,7 @@ window.exportGantt = exportGantt;
       identity.on("init", async (user) => {
         if (user) {
           console.log("[Auth] init con user:", user.email || user.id);
-          await boot();
+          await startApp();
         } else {
           console.log("[Auth] init sin user -> abriendo login");
           identity.open();
@@ -1127,7 +1127,7 @@ window.exportGantt = exportGantt;
       identity.on("login", async (user) => {
         console.log("[Auth] login ok:", user.email || user.id);
         identity.close();
-        await boot();
+        await startApp();
       });
 
       identity.on("logout", () => {
