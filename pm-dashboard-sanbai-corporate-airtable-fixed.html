@@ -1300,33 +1300,40 @@ function applyAuthUI(user) {
 
 
 function requireLoginThenBoot() {
-  if (!window.netlifyIdentity) return boot(); // modo abierto
+  if (!window.netlifyIdentity) {
+    console.warn("Netlify Identity no cargado");
+    boot(); // modo abierto (por si acaso)
+    return;
+  }
 
   window.netlifyIdentity.init();
 
   window.netlifyIdentity.on("init", (user) => {
-    identityUser = user;
-    if (user) boot();
-    else window.netlifyIdentity.open();
+    console.log("Identity init, user:", user);
+
+    if (user) {
+      // ✅ USUARIO YA LOGUEADO (refresh de página)
+      boot();
+    } else {
+      // ❌ No logueado → pedir login
+      window.netlifyIdentity.open();
+    }
   });
 
   window.netlifyIdentity.on("login", (user) => {
-    identityUser = user;
+    console.log("Login OK:", user.email);
     window.netlifyIdentity.close();
     boot();
   });
 
   window.netlifyIdentity.on("logout", () => {
-    identityUser = null;
-    window.netlifyIdentity.open();
+    console.log("Logout");
+    location.reload(); // 🔁 reset limpio
   });
 }
 
 document.addEventListener("DOMContentLoaded", requireLoginThenBoot);
 
-
-// Start
-document.addEventListener("DOMContentLoaded", requireLoginThenBoot);
 </script>
 </body>
 </html>
