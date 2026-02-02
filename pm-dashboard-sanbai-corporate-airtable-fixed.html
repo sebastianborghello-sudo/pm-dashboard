@@ -1299,39 +1299,30 @@ function applyAuthUI(user) {
 }
 
 
-async function requireLoginThenBoot() {
+ffunction requireLoginThenBoot() {
   if (!window.netlifyIdentity) {
-    console.warn("Netlify Identity widget no cargó. Iniciando sin login.");
-    await boot();
+    console.warn("Netlify Identity no cargó");
     return;
   }
 
-  // 1) Registrá handlers ANTES
-  window.netlifyIdentity.on("init", async (user) => {
+  netlifyIdentity.init();
+
+  netlifyIdentity.on("init", user => {
     if (user) {
-      identityUser = user;
-    applyAuthUI(user);
-      await boot();
+      boot(); // 👈 acá, sin await
     } else {
-      window.netlifyIdentity.open();
+      netlifyIdentity.open();
     }
   });
 
-  window.netlifyIdentity.on("login", async (user) => {
-    identityUser = user;
-    applyAuthUI(user);
-    window.netlifyIdentity.close();
-    await boot();
+  netlifyIdentity.on("login", () => {
+    netlifyIdentity.close();
+    boot(); // 👈 acá también
   });
 
-  window.netlifyIdentity.on("logout", () => {
-    identityUser = null;
-    applyAuthUI(null);
-    window.netlifyIdentity.open();
+  netlifyIdentity.on("logout", () => {
+    location.reload();
   });
-
-  // 2) Recién ahora init
-  window.netlifyIdentity.init();
 }
 
 
