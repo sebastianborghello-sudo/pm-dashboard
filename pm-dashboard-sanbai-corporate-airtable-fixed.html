@@ -1381,10 +1381,10 @@ document.addEventListener("DOMContentLoaded", requireLoginThenBoot);
 
     document.addEventListener("DOMContentLoaded", requireLoginThenBoot);
 
-    // Exponer logout global para tu botón si lo usás
     window.doLogout = function () {
       if (window.netlifyIdentity) window.netlifyIdentity.logout();
-    }
+    };
+  })();
     
 </script>
 
