@@ -1152,6 +1152,70 @@ window.exportGantt = exportGantt;
     }
   }
 
+  // ================================
+// UI Actions (GLOBAL) + Wiring
+// ================================
+
+function exportPDF() {
+  // En web, "Exportar PDF" = abrir diálogo de impresión (Save as PDF)
+  window.print();
+}
+
+function doLogout() {
+  try {
+    if (window.netlifyIdentity) {
+      window.netlifyIdentity.logout();
+      // opcional: volver a abrir login
+      window.netlifyIdentity.open();
+    } else {
+      alert("Auth no disponible (Netlify Identity no cargó).");
+    }
+  } catch (e) {
+    console.error("[Logout] error:", e);
+  }
+}
+
+// Exponer funciones que se usan desde HTML/render dinámico (onclick en strings)
+window.exportPDF = exportPDF;
+window.doLogout = doLogout;
+
+// OJO: estas funciones tienen que EXISTIR en tu archivo.
+// Si existen, las exponemos. Si no, no rompe.
+if (typeof showModal === "function") window.showModal = showModal;
+if (typeof closeModal === "function") window.closeModal = closeModal;
+if (typeof editTask === "function") window.editTask = editTask;
+if (typeof saveTask === "function") window.saveTask = saveTask;
+if (typeof exportGantt === "function") window.exportGantt = exportGantt;
+
+// Cableado de botones por ID
+function wireButtons() {
+  const btnNewTask = document.getElementById("btnNewTask");
+  if (btnNewTask && typeof showModal === "function") {
+    btnNewTask.addEventListener("click", () => showModal());
+  }
+
+  const btnLogout = document.getElementById("btnLogout");
+  if (btnLogout) {
+    btnLogout.addEventListener("click", () => doLogout());
+  }
+
+  const btnPrint = document.getElementById("btnPrint");
+  if (btnPrint) {
+    btnPrint.addEventListener("click", () => window.print());
+  }
+
+  const btnExportPdf = document.getElementById("btnExportPdf");
+  if (btnExportPdf) {
+    btnExportPdf.addEventListener("click", () => exportPDF());
+  }
+}
+
+// Llamarlo después de que se renderiza el DOM (y después de init/boot si hace falta)
+document.addEventListener("DOMContentLoaded", () => {
+  wireButtons();
+});
+
+
   document.addEventListener("DOMContentLoaded", startWithAuth);
 </script>
 
