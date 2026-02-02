@@ -1302,16 +1302,6 @@ function applyAuthUI(user) {
 }
 
 
-function requireLoginThenBoot() {
-  if (!window.netlifyIdentity) {
-    console.warn("Netlify Identity no cargado");
-    boot(); // modo abierto (por si acaso)
-    return;
-  }
-
-
-
-document.addEventListener("DOMContentLoaded", requireLoginThenBoot);
 
   // --- AUTH (Netlify Identity) - robusto ---
   (function () {
