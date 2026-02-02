@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js">document.addEventListener("DOMContentLoaded", requireLoginThenBoot);
+</script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard PM | Sanbai (Corporate)</title>
@@ -531,6 +532,7 @@ body.pdf-mode .gantt-container {
 
   // ===== Estado global =====
   let identityUser = null;
+    applyAuthUI(null);
   let projects = {};
   let currentProjectKey = null;
   let currentProject = null;
@@ -591,11 +593,7 @@ body.pdf-mode .gantt-container {
  async function loadFromBackend() {
   const r = await fetch('/.netlify/functions/airtable', {
     cache: 'no-store',
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders(),
-    }
-  });
+    headers: await getAuthHeaders()});
 
   if (!r.ok) {
     const t = await r.text();
@@ -611,10 +609,7 @@ body.pdf-mode .gantt-container {
 async function createTaskRemote(task) {
   const r = await fetch("/.netlify/functions/airtable/tasks", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders(),
-    },
+    headers: await getAuthHeaders(),
     body: JSON.stringify({ projectKey: currentProjectKey, ...task }),
   });
   const data = await r.json();
@@ -625,10 +620,7 @@ async function createTaskRemote(task) {
 async function updateTaskRemote(recordId, task) {
   const r = await fetch(`/.netlify/functions/airtable/tasks/${recordId}`, {
     method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders(),
-    },
+    headers: await getAuthHeaders(),
     body: JSON.stringify(task),
   });
   const data = await r.json();
@@ -640,7 +632,7 @@ async function updateTaskRemote(recordId, task) {
   async function createCashflowRemote(evt) {
     const r = await fetch("/.netlify/functions/airtable/cashflow", {
       method: "POST",
-      headers: getAuthHeaders(),
+      headers: await getAuthHeaders(),
       body: JSON.stringify({ projectKey: currentProjectKey, ...evt })
     });
     const data = await r.json().catch(() => ({}));
@@ -651,7 +643,7 @@ async function updateTaskRemote(recordId, task) {
   async function updateCashflowRemote(recordId, evt) {
     const r = await fetch(`/.netlify/functions/airtable/cashflow/${recordId}`, {
       method: "PATCH",
-      headers: getAuthHeaders(),
+      headers: await getAuthHeaders(),
       body: JSON.stringify(evt)
     });
     const data = await r.json().catch(() => ({}));
@@ -714,6 +706,7 @@ function renderProjectSelector() {
     renderCritical();
     updateMetrics();
     updateProjectInfoButton(currentProjectKey);
+            bindUIEvents();
   };
 }
 
@@ -975,6 +968,7 @@ function renderProjectSelector() {
     renderCritical();
     updateMetrics();
     updateProjectInfoButton(currentProjectKey);
+            bindUIEvents();
   }
 
   // ===== Modal Tareas =====
@@ -1055,7 +1049,7 @@ function renderProjectSelector() {
   const cashflowModalTitle = document.getElementById("cashflowModalTitle");
   const cfDate = document.getElementById("cfDate");
   const cfType = document.getElementById("cfType");
-  const cfDescription = document.getElementById("cfdescription");
+  const cfDescription = document.getElementById("cfDescription");
   const cfParty = document.getElementById("cfParty");
   const cfAmount = document.getElementById("cfAmount");
   const cfCurrency = document.getElementById("cfCurrency");
@@ -1244,6 +1238,7 @@ async function boot() {
   renderCashflow();
 
   updateProjectInfoButton(currentProjectKey);
+            bindUIEvents();
 
   bindUIEvents(); // si existe
 }
@@ -1257,12 +1252,54 @@ async function boot() {
    evita exponer datos si no hay login.
 */
 
-function getAuthHeaders() {
-  const token = identityUser?.token?.access_token;
-  return token ? { Authorization: `Bearer ${token}` } : {};
+async function getAuthHeaders() {
+  const headers = { "Content-Type": "application/json" };
+  const user = window.netlifyIdentity?.currentUser?.() || null;
+  if (!user) return headers;
+
+  try {
+    // Prefer jwt() (more reliable across widget versions)
+    const token = (typeof user.jwt === "function")
+      ? await user.jwt()
+      : (user.token && user.token.access_token) || null;
+    if (token) headers["Authorization"] = "Bearer " + token;
+  } catch (e) {
+    console.warn("No se pudo obtener JWT de Netlify Identity:", e);
+  }
+  return headers;
 }
 
-async function requireLoginThenBoot() {
+async 
+// ===== UI EVENTS =====
+function bindUIEvents() {
+  // Logout button
+  const btnLogout = document.getElementById("btnLogout");
+  if (btnLogout) {
+    btnLogout.addEventListener("click", () => {
+      try { window.netlifyIdentity.logout(); } catch(e) {}
+    });
+  }
+
+  // Click on task -> edit
+  const tasksList = document.getElementById("tasksList");
+  if (tasksList) {
+    tasksList.addEventListener("click", (ev) => {
+      const card = ev.target.closest(".task-item");
+      if (!card) return;
+      const rid = card.getAttribute("data-record-id");
+      if (!rid) return; // tareas sin recordId no editables
+      editTask(rid);
+    });
+  }
+}
+
+function applyAuthUI(user) {
+  const btnLogout = document.getElementById("btnLogout");
+  if (btnLogout) btnLogout.style.display = user ? "inline-flex" : "none";
+}
+
+
+function requireLoginThenBoot() {
   if (!window.netlifyIdentity) {
     console.warn("Netlify Identity widget no cargó. Iniciando sin login.");
     await boot();
@@ -1273,6 +1310,7 @@ async function requireLoginThenBoot() {
   window.netlifyIdentity.on("init", async (user) => {
     if (user) {
       identityUser = user;
+    applyAuthUI(user);
       await boot();
     } else {
       window.netlifyIdentity.open();
@@ -1281,12 +1319,14 @@ async function requireLoginThenBoot() {
 
   window.netlifyIdentity.on("login", async (user) => {
     identityUser = user;
+    applyAuthUI(user);
     window.netlifyIdentity.close();
     await boot();
   });
 
   window.netlifyIdentity.on("logout", () => {
     identityUser = null;
+    applyAuthUI(null);
     window.netlifyIdentity.open();
   });
 
@@ -1297,9 +1337,9 @@ async function requireLoginThenBoot() {
 
 // Start
 document.addEventListener("DOMContentLoaded", requireLoginThenBoot);
-
 </script>
 </body>
 </html>
+
 
 
