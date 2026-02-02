@@ -589,15 +589,11 @@ body.pdf-mode .gantt-container {
 
   // ===== Backend (Airtable via Netlify Functions) =====
  async function loadFromBackend() {
-  const user = netlifyIdentity.currentUser();
-  if (!user) throw new Error("No autenticado");
-
-  const token = user.token.access_token;
-
   const r = await fetch('/.netlify/functions/airtable', {
     cache: 'no-store',
     headers: {
-      Authorization: `Bearer ${token}`
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
     }
   });
 
@@ -607,46 +603,36 @@ body.pdf-mode .gantt-container {
   }
 
   const data = await r.json();
-  if (!data || !data.projects) {
-    throw new Error("Respuesta inválida del backend");
-  }
-
+  if (!data || !data.projects) throw new Error('Respuesta inválida del backend');
   return data.projects;
 }
 
 
 async function createTaskRemote(task) {
-  const token = netlifyIdentity.currentUser().token.access_token;
-
   const r = await fetch("/.netlify/functions/airtable/tasks", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`
+      ...getAuthHeaders(),
     },
     body: JSON.stringify({ projectKey: currentProjectKey, ...task }),
   });
-
   const data = await r.json();
-  if (!r.ok || !data.ok) throw new Error(data.error || "Error creando task");
+  if (!r.ok || !data.ok) throw new Error(data?.error || "Error creando task");
   return data.record;
 }
 
-
 async function updateTaskRemote(recordId, task) {
-  const token = netlifyIdentity.currentUser().token.access_token;
-
   const r = await fetch(`/.netlify/functions/airtable/tasks/${recordId}`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`
+      ...getAuthHeaders(),
     },
     body: JSON.stringify(task),
   });
-
   const data = await r.json();
-  if (!r.ok || !data.ok) throw new Error(data.error || "Error actualizando task");
+  if (!r.ok || !data.ok) throw new Error(data?.error || "Error actualizando task");
   return data.record;
 }
 
@@ -1270,44 +1256,47 @@ async function boot() {
    Nota: Esto no "protege" el HTML (es estático), pero combinado con funciones que exigen JWT
    evita exponer datos si no hay login.
 */
-async function requireLoginThenBoot() {
-  try {
-    if (!window.netlifyIdentity) {
-      console.warn("Netlify Identity widget no cargó. Iniciando sin login.");
-      await boot();
-      return;
-    }
+<script>
+let identityUser = null;
 
-    // Inicializa una vez
-    window.netlifyIdentity.init();
-
-    window.netlifyIdentity.on("init", async (user) => {
-      if (user) {
-        identityUser = user;
-        await boot();
-      } else {
-        // Pedir login
-        window.netlifyIdentity.open();
-      }
-    });
-
-    window.netlifyIdentity.on("login", async (user) => {
-      identityUser = user;
-      window.netlifyIdentity.close();
-      await boot();
-    });
-
-    window.netlifyIdentity.on("logout", () => {
-      identityUser = null;
-      // recargar para limpiar estado
-      window.location.reload();
-    });
-  } catch (e) {
-    console.error("Error en requireLoginThenBoot:", e);
-    // fallback
-    await boot();
-  }
+function getAuthHeaders() {
+  const token = identityUser?.token?.access_token;
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
+
+async function requireLoginThenBoot() {
+  if (!window.netlifyIdentity) {
+    console.warn("Netlify Identity widget no cargó. Iniciando sin login.");
+    await boot();
+    return;
+  }
+
+  // 1) Registrá handlers ANTES
+  window.netlifyIdentity.on("init", async (user) => {
+    if (user) {
+      identityUser = user;
+      await boot();
+    } else {
+      window.netlifyIdentity.open();
+    }
+  });
+
+  window.netlifyIdentity.on("login", async (user) => {
+    identityUser = user;
+    window.netlifyIdentity.close();
+    await boot();
+  });
+
+  window.netlifyIdentity.on("logout", () => {
+    identityUser = null;
+    window.netlifyIdentity.open();
+  });
+
+  // 2) Recién ahora init
+  window.netlifyIdentity.init();
+}
+</script>
+
 
 // Start
 document.addEventListener("DOMContentLoaded", requireLoginThenBoot);
