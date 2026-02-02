@@ -1238,11 +1238,56 @@ async function boot() {
 
 
   // IMPORTANTÍSIMO: esperar a window.load (asegura que netlify-identity-widget ya esté)
-  window.addEventListener("load", boot);
-</script>
-
-
   </script>
+
+/* ===== Netlify Identity gate (client-side) =====
+   Nota: Esto no "protege" el HTML (es estático), pero combinado con funciones que exigen JWT
+   evita exponer datos si no hay login.
+*/
+async function requireLoginThenBoot() {
+  try {
+    if (!window.netlifyIdentity) {
+      console.warn("Netlify Identity widget no cargó. Iniciando sin login.");
+      await boot();
+      return;
+    }
+
+    // Inicializa una vez
+    window.netlifyIdentity.init();
+
+    window.netlifyIdentity.on("init", async (user) => {
+      if (user) {
+        identityUser = user;
+        await boot();
+      } else {
+        // Pedir login
+        window.netlifyIdentity.open();
+      }
+    });
+
+    window.netlifyIdentity.on("login", async (user) => {
+      identityUser = user;
+      window.netlifyIdentity.close();
+      await boot();
+    });
+
+    window.netlifyIdentity.on("logout", () => {
+      identityUser = null;
+      // recargar para limpiar estado
+      window.location.reload();
+    });
+  } catch (e) {
+    console.error("Error en requireLoginThenBoot:", e);
+    // fallback
+    await boot();
+  }
+}
+
+// Start
+document.addEventListener("DOMContentLoaded", requireLoginThenBoot);
+
+</script>
 </body>
 </html>
+
 
