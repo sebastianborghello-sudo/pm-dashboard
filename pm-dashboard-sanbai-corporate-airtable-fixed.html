@@ -1306,34 +1306,87 @@ function requireLoginThenBoot() {
     return;
   }
 
-  window.netlifyIdentity.init();
 
-  window.netlifyIdentity.on("init", (user) => {
-    console.log("Identity init, user:", user);
-
-    if (user) {
-      // ✅ USUARIO YA LOGUEADO (refresh de página)
-      boot();
-    } else {
-      // ❌ No logueado → pedir login
-      window.netlifyIdentity.open();
-    }
-  });
-
-  window.netlifyIdentity.on("login", (user) => {
-    console.log("Login OK:", user.email);
-    window.netlifyIdentity.close();
-    boot();
-  });
-
-  window.netlifyIdentity.on("logout", () => {
-    console.log("Logout");
-    location.reload(); // 🔁 reset limpio
-  });
-}
 
 document.addEventListener("DOMContentLoaded", requireLoginThenBoot);
 
+<script>
+  // --- AUTH (Netlify Identity) - robusto ---
+  (function () {
+    let started = false;
+
+    function startApp() {
+      if (started) return;
+      started = true;
+      boot(); // <- tu boot real (carga Airtable + render)
+    }
+
+    function waitForIdentity(maxMs = 8000) {
+      return new Promise((resolve, reject) => {
+        const t0 = Date.now();
+        const tick = () => {
+          if (window.netlifyIdentity) return resolve(window.netlifyIdentity);
+          if (Date.now() - t0 > maxMs) return reject(new Error("Netlify Identity no cargó"));
+          setTimeout(tick, 50);
+        };
+        tick();
+      });
+    }
+
+    async function requireLoginThenBoot() {
+      try {
+        const ni = await waitForIdentity();
+
+        // IMPORTANTE: init una sola vez
+        ni.init();
+
+        ni.on("init", (user) => {
+          console.log("[Identity] init user:", user);
+
+          if (user) {
+            // ✅ si ya estaba logueado (refresh)
+            startApp();
+          } else {
+            // ❌ no logueado: abrir modal
+            ni.open("login");
+          }
+        });
+
+        ni.on("login", (user) => {
+          console.log("[Identity] login:", user?.email);
+          ni.close();
+          startApp();
+        });
+
+        ni.on("logout", () => {
+          console.log("[Identity] logout");
+          // reset limpio para no quedar en estados raros
+          location.reload();
+        });
+
+        // Si por algún motivo init ya ocurrió ANTES de que enganchemos el handler,
+        // usamos currentUser como fallback:
+        const u = ni.currentUser();
+        if (u) {
+          console.log("[Identity] currentUser fallback:", u.email);
+          startApp();
+        }
+      } catch (e) {
+        console.warn("[Auth] Sin Identity, modo abierto:", e);
+        startApp(); // fallback sin auth (si querés, esto lo podés eliminar)
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", requireLoginThenBoot);
+
+    // Exponer logout global para tu botón si lo usás
+    window.doLogout = function () {
+      if (window.netlifyIdentity) window.netlifyIdentity.logout();
+    };
+  })();
+</script>
+
+    
 </script>
 </body>
 </html>
