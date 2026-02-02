@@ -268,7 +268,7 @@ body.pdf-mode .gantt-container {
         <i class="fa-solid fa-file-pdf"></i> Exportar PDF
       </button>
 
-     <button class="btn btn-white" onclick="netlifyIdentity.logout()" title="Cerrar sesión">
+     <button id="btnLogout" class="btn btn-white"  title="Cerrar sesión">
   🔒 Logout
 </button>
 
@@ -496,885 +496,591 @@ body.pdf-mode .gantt-container {
   </div>
 
   <script>
-  // ===== Links a páginas "Info Proyecto" =====
-  const PROJECT_INFO_LINKS = {
-    macro_lan: "https://sanbai-pm-dashboard.netlify.app/proyecto-macro-dashboard-sanbai.html",
-    storage_backup: "https://sanbai-pm-dashboard.netlify.app/proyecto-storage-backup-dashboard-sanbai.html",
-  };
+  /* ===============================
+   Sanbai PM Dashboard (Airtable)
+   - Single source of truth: Airtable (via Netlify Function)
+   - Auth: Netlify Identity (JWT -> Authorization: Bearer <token>)
+   =============================== */
 
-  function updateProjectInfoButton(projectKey) {
-    const btn = document.getElementById("btnProjectInfo");
-    if (!btn) return;
-    const url = PROJECT_INFO_LINKS[projectKey];
-    if (url) {
-      btn.href = url;
-      btn.style.display = "inline-flex";
-    } else {
-      btn.href = "#";
-      btn.style.display = "none";
-    }
+const API_BASE = "/.netlify/functions/airtable";
+const STORAGE_KEY = "pm_projects_v1";
+
+// Map projectKey -> info page
+const PROJECT_INFO_LINKS = {
+  macro_lan: "https://sanbai-pm-dashboard.netlify.app/proyecto-macro-dashboard-sanbai.html",
+  storage_backup: "https://sanbai-pm-dashboard.netlify.app/proyecto-storage-backup-dashboard-sanbai.html",
+};
+
+// ===== State =====
+let projects = {};              // loaded from backend
+let currentProjectKey = null;
+let currentProject = null;
+let currentTab = "all";
+let editingTaskRecordId = null;
+
+// Netlify Identity
+let identityUser = null;
+
+// ===== Small helpers =====
+function $(id){ return document.getElementById(id); }
+
+function safeText(v){ return (v === null || v === undefined) ? "" : String(v); }
+
+function showConnectionStatus(ok, msg) {
+  let el = document.getElementById("connStatus");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "connStatus";
+    el.style.position = "fixed";
+    el.style.bottom = "16px";
+    el.style.left = "16px";
+    el.style.padding = "10px 12px";
+    el.style.borderRadius = "10px";
+    el.style.fontSize = "12px";
+    el.style.fontWeight = "600";
+    el.style.zIndex = "2000";
+    el.style.boxShadow = "0 10px 22px rgba(0,0,0,0.12)";
+    document.body.appendChild(el);
   }
-
-    function editTask(recordId) {
-  const task = (currentProject.tasks || []).find(t => t.recordId === recordId);
-  if (!task) return;
-
-  editingTaskRecordId = recordId;
-
-  taskName.value = task.name || "";
-  taskDesc.value = task.description || "";
-  taskOwner.value = task.owner || "";
-  taskStatus.value = task.status || "pending";
-  taskStart.value = task.startDate || "";
-  taskEnd.value = task.endDate || "";
-  taskProgress.value = task.progress ?? 0;
-
-  taskModal.classList.add("active");
+  if (ok) {
+    el.textContent = msg || "Conectado";
+    el.style.background = "rgba(34,197,94,0.95)";
+    el.style.color = "white";
+  } else {
+    el.textContent = msg || "Desconectado";
+    el.style.background = "rgba(245,158,11,0.95)";
+    el.style.color = "white";
+  }
+  setTimeout(() => { try { el.remove(); } catch(e){} }, 8000);
 }
 
+function updateProjectInfoButton(projectKey) {
+  const btn = document.getElementById("btnProjectInfo");
+  if (!btn) return;
+  const url = PROJECT_INFO_LINKS[projectKey];
+  if (url) {
+    btn.href = url;
+    btn.style.display = "inline-flex";
+  } else {
+    btn.href = "#";
+    btn.style.display = "none";
+  }
+}
 
-  // ===== Estado global =====
-  let identityUser = null;
-    applyAuthUI(null);
-  let projects = {};
-  let currentProjectKey = null;
-  let currentProject = null;
-  let currentTab = "all";
-  let editingTaskRecordId = null;
-  let editingCashflowRecordId = null;
+// ===== Auth =====
+async function getAuthHeaders(extra = {}) {
+  if (!identityUser) {
+    // in case Identity is present but not set yet:
+    identityUser = window.netlifyIdentity?.currentUser?.() || null;
+  }
+  if (!identityUser) return extra; // will likely 401; caller can handle
+  // Netlify Identity uses jwt() to fetch a fresh token
+  let token = "";
+  try {
+    if (typeof identityUser.jwt === "function") token = await identityUser.jwt();
+    else if (identityUser.token?.access_token) token = identityUser.token.access_token;
+  } catch (e) {
+    console.warn("[Auth] No se pudo obtener JWT:", e);
+  }
+  if (!token) return extra;
+  return { ...extra, Authorization: "Bearer " + token };
+}
 
-  const STORAGE_SELECTED_KEY = "pm_selected_project_v2";
-  function saveSelectedProject(k) { try { localStorage.setItem(STORAGE_SELECTED_KEY, k || ""); } catch(e){} }
-  function loadSelectedProject() { try { return localStorage.getItem(STORAGE_SELECTED_KEY) || ""; } catch(e){ return ""; } }
-
-  function getAuthHeaders(extra={}) {
-    const h = { "Content-Type": "application/json", ...extra };
-    const token = identityUser?.token?.access_token;
-    if (token) h["Authorization"] = `Bearer ${token}`;
-    return h;
+async function requireLoginThenStart() {
+  if (!window.netlifyIdentity) {
+    console.error("[Auth] Netlify Identity no cargó");
+    showConnectionStatus(false, "Auth no disponible (Identity no cargó)");
+    return;
   }
 
-  // ===== UI helpers =====
-  function showConnectionStatus(ok, msg) {
-    let el = document.getElementById("connStatus");
-    if (!el) {
-      el = document.createElement("div");
-      el.id = "connStatus";
-      el.style.position = "fixed";
-      el.style.bottom = "16px";
-      el.style.left = "16px";
-      el.style.padding = "10px 12px";
-      el.style.borderRadius = "10px";
-      el.style.fontSize = "12px";
-      el.style.fontWeight = "600";
-      el.style.zIndex = "2000";
-      el.style.boxShadow = "0 10px 22px rgba(0,0,0,0.12)";
-      document.body.appendChild(el);
-    }
-    if (ok) {
-      el.textContent = msg || "Conectado";
-      el.style.background = "rgba(34,197,94,0.95)";
-      el.style.color = "white";
+  // Bind logout button if present
+  const logoutBtn = document.getElementById("btnLogout");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", () => window.netlifyIdentity.logout());
+  }
+
+  window.netlifyIdentity.init();
+
+  window.netlifyIdentity.on("init", async (user) => {
+    identityUser = user || null;
+    if (identityUser) {
+      await startApp();
     } else {
-      el.textContent = msg || "Sin conexión";
-      el.style.background = "rgba(245,158,11,0.95)";
-      el.style.color = "white";
+      window.netlifyIdentity.open(); // show login modal
     }
-    setTimeout(() => { try { el.remove(); } catch(e){} }, 8000);
-  }
+  });
 
-  function ensureProjectShape(p) {
-    if (!p.meta) p.meta = {};
-    if (!Array.isArray(p.tasks)) p.tasks = [];
-    if (!Array.isArray(p.team)) p.team = [];
-    if (!Array.isArray(p.critical)) p.critical = [];
-    if (!Array.isArray(p.cashflow)) p.cashflow = [];
-    return p;
-  }
+  window.netlifyIdentity.on("login", async (user) => {
+    identityUser = user || null;
+    window.netlifyIdentity.close();
+    await startApp();
+  });
 
-  // ===== Backend (Airtable via Netlify Functions) =====
- async function loadFromBackend() {
-  const r = await fetch('/.netlify/functions/airtable', {
-    cache: 'no-store',
-    headers: await getAuthHeaders()});
+  window.netlifyIdentity.on("logout", () => {
+    identityUser = null;
+    // clean UI state
+    projects = {};
+    currentProjectKey = null;
+    currentProject = null;
+    showConnectionStatus(false, "Sesión cerrada");
+    window.netlifyIdentity.open();
+  });
+}
+
+// ===== Backend =====
+async function loadFromBackend() {
+  const headers = await getAuthHeaders({ "Content-Type": "application/json" });
+  const r = await fetch(API_BASE, { headers, cache: "no-store" });
+  const text = await r.text();
+  let data;
+  try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
 
   if (!r.ok) {
-    const t = await r.text();
-    throw new Error(`Airtable backend error: ${r.status} ${t}`);
+    throw new Error(`Airtable backend error: ${r.status} ${JSON.stringify(data)}`);
   }
-
-  const data = await r.json();
-  if (!data || !data.projects) throw new Error('Respuesta inválida del backend');
+  if (!data || !data.projects) throw new Error("Respuesta inválida del backend (sin projects)");
   return data.projects;
 }
 
-
-async function createTaskRemote(task) {
-  const r = await fetch("/.netlify/functions/airtable/tasks", {
-    method: "POST",
-    headers: await getAuthHeaders(),
-    body: JSON.stringify({ projectKey: currentProjectKey, ...task }),
+async function apiJSON(method, url, body) {
+  const headers = await getAuthHeaders({ "Content-Type": "application/json" });
+  const r = await fetch(url, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
   });
-  const data = await r.json();
-  if (!r.ok || !data.ok) throw new Error(data?.error || "Error creando task");
+  const text = await r.text();
+  let data;
+  try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
+  if (!r.ok) throw new Error(`${method} ${url} -> ${r.status} ${JSON.stringify(data)}`);
+  return data;
+}
+
+async function createTaskRemote(taskData) {
+  const payload = { projectKey: currentProjectKey, ...taskData };
+  const data = await apiJSON("POST", `${API_BASE}/tasks`, payload);
+  if (!data.ok) throw new Error(data.error || "No se pudo crear tarea");
+  return data.record; // Airtable record
+}
+
+async function updateTaskRemote(recordId, taskData) {
+  const data = await apiJSON("PATCH", `${API_BASE}/tasks/${recordId}`, taskData);
+  if (!data.ok) throw new Error(data.error || "No se pudo actualizar tarea");
   return data.record;
 }
 
-async function updateTaskRemote(recordId, task) {
-  const r = await fetch(`/.netlify/functions/airtable/tasks/${recordId}`, {
-    method: "PATCH",
-    headers: await getAuthHeaders(),
-    body: JSON.stringify(task),
-  });
-  const data = await r.json();
-  if (!r.ok || !data.ok) throw new Error(data?.error || "Error actualizando task");
-  return data.record;
+async function deleteTaskRemote(recordId) {
+  const data = await apiJSON("DELETE", `${API_BASE}/tasks/${recordId}`);
+  if (!data.ok) throw new Error(data.error || "No se pudo borrar tarea");
+  return data.deleted;
 }
 
+// ===== Persistence (optional local fallback) =====
+function persistProjects() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(projects)); } catch(e){}
+}
+function loadProjectsFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch(e) { return null; }
+}
 
-  async function createCashflowRemote(evt) {
-    const r = await fetch("/.netlify/functions/airtable/cashflow", {
-      method: "POST",
-      headers: await getAuthHeaders(),
-      body: JSON.stringify({ projectKey: currentProjectKey, ...evt })
-    });
-    const data = await r.json().catch(() => ({}));
-    if (!r.ok || !data.ok) throw new Error(data?.error || "Error creando cashflow");
-    return data.record;
-  }
-
-  async function updateCashflowRemote(recordId, evt) {
-    const r = await fetch(`/.netlify/functions/airtable/cashflow/${recordId}`, {
-      method: "PATCH",
-      headers: await getAuthHeaders(),
-      body: JSON.stringify(evt)
-    });
-    const data = await r.json().catch(() => ({}));
-    if (!r.ok || !data.ok) throw new Error(data?.error || "Error actualizando cashflow");
-    return data.record;
-  }
-
-  async function refreshAndRender() {
-    try {
-      const remoteProjects = await loadFromBackend();
-      projects = remoteProjects || {};
-      Object.keys(projects).forEach(k => ensureProjectShape(projects[k]));
-      showConnectionStatus(true, "Conectado a Airtable");
-    } catch(e) {
-      console.warn(e);
-      showConnectionStatus(false, "No se pudo cargar Airtable");
-    }
-
-    const keys = Object.keys(projects);
-    if (!keys.length) {
-      currentProjectKey = null;
-      currentProject = ensureProjectShape({ meta: { name: "Sin proyectos", subtitle: "", statusLabel: "" } });
-    } else {
-      const saved = loadSelectedProject();
-      currentProjectKey = (saved && projects[saved]) ? saved : (currentProjectKey && projects[currentProjectKey] ? currentProjectKey : keys[0]);
-      currentProject = ensureProjectShape(projects[currentProjectKey]);
-    }
-
-    renderAll();
-  }
-
-  // ===== Render =====
+// ===== UI =====
 function renderProjectSelector() {
-  const sel = document.getElementById("projectSelector");
+  const sel = $("projectSelector");
   if (!sel) return;
 
-  sel.innerHTML = Object.entries(projects)
-    .map(([key, p]) => `<option value="${key}">${p?.meta?.name || key}</option>`)
-    .join("");
-
-  if (!currentProjectKey || !projects[currentProjectKey]) {
-    currentProjectKey = Object.keys(projects)[0];
-  }
+  const entries = Object.entries(projects);
+  sel.innerHTML = entries.map(([key, p]) => {
+    const label = p?.meta?.name ? p.meta.name : key;
+    return `<option value="${key}">${escapeHtml(label)}</option>`;
+  }).join("");
 
   sel.value = currentProjectKey;
 
   sel.onchange = () => {
     currentProjectKey = sel.value;
     currentProject = projects[currentProjectKey];
-
     currentTab = "all";
     document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
     const allTab = document.querySelector('.tab[data-tab="all"]');
     if (allTab) allTab.classList.add("active");
-
-    renderProjectMeta();
-    renderTasks();
-    renderGantt();
-    renderTeam();
-    renderCritical();
-    updateMetrics();
     updateProjectInfoButton(currentProjectKey);
-            bindUIEvents();
+    renderAll();
   };
 }
 
+function renderProjectMeta() {
+  if (!currentProject) return;
+  const h2 = document.querySelector(".project-header h2");
+  const p = document.querySelector(".project-header p");
+  const status = document.querySelector(".status-badge");
+  if (h2) h2.textContent = safeText(currentProject.meta?.name);
+  if (p) p.textContent = safeText(currentProject.meta?.subtitle);
+  if (status) status.textContent = safeText(currentProject.meta?.statusLabel);
 
-  function renderProjectMeta() {
-    const h2 = document.querySelector(".project-header h2");
-    const p = document.querySelector(".project-header p");
-    const badge = document.querySelector(".status-badge");
-    if (h2) h2.textContent = currentProject?.meta?.name || "Proyecto";
-    if (p) p.textContent = currentProject?.meta?.subtitle || "";
-    if (badge) badge.textContent = currentProject?.meta?.statusLabel || "";
-
-    const infoValues = document.querySelectorAll(".project-info-grid .info-value");
-    if (infoValues?.length >= 5) {
-      infoValues[0].textContent = currentProject?.meta?.client || "—";
-      infoValues[1].textContent = currentProject?.meta?.amount || "—";
-      infoValues[2].textContent = currentProject?.meta?.start || "—";
-      infoValues[3].textContent = currentProject?.meta?.end || "—";
-      infoValues[4].textContent = currentProject?.meta?.pm || "—";
-    }
+  const infoValues = document.querySelectorAll(".project-info-grid .info-value");
+  if (infoValues.length >= 5) {
+    infoValues[0].textContent = safeText(currentProject.meta?.client);
+    infoValues[1].textContent = safeText(currentProject.meta?.amount);
+    infoValues[2].textContent = safeText(currentProject.meta?.start);
+    infoValues[3].textContent = safeText(currentProject.meta?.end);
+    infoValues[4].textContent = safeText(currentProject.meta?.pm);
   }
+}
 
-  function toSortableDate(iso) {
-    if (!iso) return Number.POSITIVE_INFINITY;
-    const d = new Date(iso + "T00:00:00");
-    const t = d.getTime();
-    return Number.isFinite(t) ? t : Number.POSITIVE_INFINITY;
-  }
+function toSortableDate(iso) {
+  if (!iso) return Number.POSITIVE_INFINITY;
+  const d = new Date(iso + "T00:00:00");
+  const t = d.getTime();
+  return Number.isFinite(t) ? t : Number.POSITIVE_INFINITY;
+}
+function sortTasksByDate(tasks) {
+  return [...tasks].sort((a, b) => {
+    const aStart = toSortableDate(a.startDate);
+    const bStart = toSortableDate(b.startDate);
+    if (aStart !== bStart) return aStart - bStart;
+    const aEnd = toSortableDate(a.endDate);
+    const bEnd = toSortableDate(b.endDate);
+    if (aEnd !== bEnd) return aEnd - bEnd;
+    return safeText(a.name).localeCompare(safeText(b.name), "es");
+  });
+}
 
-  function sortTasksByDate(tasks) {
-    return [...tasks].sort((a,b) => {
-      const aStart = toSortableDate(a.startDate);
-      const bStart = toSortableDate(b.startDate);
-      if (aStart !== bStart) return aStart - bStart;
-      const aEnd = toSortableDate(a.endDate);
-      const bEnd = toSortableDate(b.endDate);
-      if (aEnd !== bEnd) return aEnd - bEnd;
-      return String(a.name||"").localeCompare(String(b.name||""), "es");
-    });
-  }
-
-  function renderTasks() {
-  const container = document.getElementById("tasksList");
+function renderTasks() {
+  const container = $("tasksList");
+  if (!container || !currentProject) return;
 
   let tasks = sortTasksByDate(currentProject.tasks || []);
-  if (currentTab !== "all") {
-    tasks = tasks.filter(t => t.status === currentTab);
-  }
+  if (currentTab !== "all") tasks = tasks.filter(t => t.status === currentTab);
 
   if (!tasks.length) {
-    container.innerHTML = `<div style="padding:20px;color:#718096">No hay tareas</div>`;
+    container.innerHTML = '<div style="text-align:center; padding:40px; color:#718096;">No hay tareas</div>';
     return;
   }
 
-  container.innerHTML = tasks.map(task => `
-    <div class="task-item ${task.status}"
-         onclick="editTask('${task.recordId}')">
+  const colors = { pending: "#e89e3c", "in-progress": "#ff7a00", completed: "#48bb78", blocked: "#f56565" };
+  const labels = { pending: "Pendiente", "in-progress": "En Curso", completed: "Completada", blocked: "Bloqueada" };
 
-      <div class="task-header">
-        <div class="task-title">${task.name}</div>
-        <div class="task-status">${task.status}</div>
+  container.innerHTML = tasks.map(task => {
+    const rid = task.recordId || "";
+    return `
+      <div class="task-item ${escapeAttr(task.status || "pending")}" onclick="editTask('${escapeAttr(rid)}')">
+        <div class="task-header">
+          <div class="task-title">${escapeHtml(task.name || "")}</div>
+          <div class="task-status" style="background:${colors[task.status] || "#777"}; color:white;">
+            ${labels[task.status] || "—"}
+          </div>
+        </div>
+        <div style="color:#718096; font-size:0.9em; margin:5px 0;">${escapeHtml(task.description || "")}</div>
+        <div class="task-meta">
+          <div class="task-meta-item"><i class="fa-solid fa-user"></i><span>${escapeHtml(task.owner || "")}</span></div>
+          <div class="task-meta-item"><i class="fa-solid fa-calendar"></i><span>${escapeHtml((task.startDate||"") + " - " + (task.endDate||""))}</span></div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${Number(task.progress||0)}%"></div></div>
       </div>
+    `;
+  }).join("");
+}
 
-      <div class="task-meta">
-        <span>${task.owner || "-"}</span>
-        <span>${task.startDate || ""} → ${task.endDate || ""}</span>
+function parseISODateUTC(iso) {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d));
+}
+function daysBetweenUTC(a, b) {
+  return Math.ceil((b - a) / (1000 * 60 * 60 * 24));
+}
+
+function renderGantt() {
+  const container = $("ganttChart");
+  if (!container || !currentProject) return;
+
+  const tasksAll = currentProject.tasks || [];
+  if (!tasksAll.length) {
+    container.innerHTML = '<div style="padding:20px; color:#718096;">No hay tareas para mostrar en el Gantt</div>';
+    return;
+  }
+
+  const starts = tasksAll.filter(t => t.startDate).map(t => parseISODateUTC(t.startDate));
+  const ends = tasksAll.filter(t => t.endDate).map(t => parseISODateUTC(t.endDate));
+  if (!starts.length || !ends.length) {
+    container.innerHTML = '<div style="padding:20px; color:#718096;">Faltan startDate/endDate en tareas</div>';
+    return;
+  }
+
+  let startDate = new Date(Math.min(...starts.map(d => d.getTime())));
+  let endDate = new Date(Math.max(...ends.map(d => d.getTime())));
+  startDate = new Date(startDate.getTime() - 7 * 86400000);
+  endDate = new Date(endDate.getTime() + 7 * 86400000);
+
+  const totalDays = Math.max(1, daysBetweenUTC(startDate, endDate));
+  const monthNames = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+
+  const months = [];
+  let cursor = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), 1));
+  const endCursor = new Date(Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), 1));
+  while (cursor <= endCursor) {
+    months.push(new Date(cursor.getTime()));
+    cursor = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, 1));
+  }
+
+  let html = '<div class="gantt-chart">';
+  html += '<div class="gantt-header"><div class="gantt-task-name">Tarea</div><div class="gantt-timeline">';
+
+  months.forEach(mStart => {
+    const mEnd = new Date(Date.UTC(mStart.getUTCFullYear(), mStart.getUTCMonth() + 1, 1));
+    const segStart = (mStart < startDate) ? startDate : mStart;
+    const segEnd = (mEnd > endDate) ? endDate : mEnd;
+    const segDays = Math.max(0, daysBetweenUTC(segStart, segEnd));
+    const flex = segDays / totalDays;
+    const label = `${monthNames[mStart.getUTCMonth()]} ${String(mStart.getUTCFullYear()).slice(2)}`;
+    html += `<div style="flex:${flex}; text-align:center;">${label}</div>`;
+  });
+
+  html += "</div></div>";
+
+  const colors = { pending: "#e89e3c", "in-progress": "#ff7a00", completed: "#48bb78", blocked: "#f56565" };
+  sortTasksByDate(tasksAll).forEach(task => {
+    if (!task.startDate || !task.endDate) return;
+    const taskStart = parseISODateUTC(task.startDate);
+    const taskEnd = parseISODateUTC(task.endDate);
+    const daysFromStart = daysBetweenUTC(startDate, taskStart);
+    const taskDuration = Math.max(1, daysBetweenUTC(taskStart, taskEnd));
+    const left = (daysFromStart / totalDays) * 100;
+    const width = (taskDuration / totalDays) * 100;
+
+    html += `<div class="gantt-row">
+      <div class="gantt-task-name">${escapeHtml(task.name || "")}</div>
+      <div class="gantt-timeline">
+        <div class="gantt-bar" style="left:${left}%; width:${width}%; background:${colors[task.status] || "#777"};">
+          ${Number(task.progress || 0)}%
+        </div>
       </div>
+    </div>`;
+  });
 
-      <div class="progress-bar">
-        <div class="progress-fill" style="width:${task.progress || 0}%"></div>
+  html += "</div>";
+  container.innerHTML = html;
+}
+
+function renderTeam() {
+  const container = $("teamList");
+  if (!container || !currentProject) return;
+  const team = currentProject.team || [];
+  container.innerHTML = team.map(m => `
+    <div class="team-member">
+      <div class="avatar">${escapeHtml(m.initials || "")}</div>
+      <div class="member-info">
+        <div class="member-name">${escapeHtml(m.name || "")}</div>
+        <div class="member-role">${escapeHtml(m.role || "")}</div>
       </div>
     </div>
   `).join("");
 }
 
-
-  function parseISODateUTC(iso) {
-    const [y,m,d] = iso.split("-").map(Number);
-    return new Date(Date.UTC(y, m-1, d));
-  }
-  function daysBetweenUTC(a,b) {
-    return Math.ceil((b-a)/(1000*60*60*24));
-  }
-
-  function renderGantt() {
-    const container = document.getElementById("ganttChart");
-    if (!container) return;
-
-    const tasks = (currentProject.tasks || []).filter(t => t.startDate && t.endDate);
-    if (!tasks.length) {
-      container.innerHTML = '<div style="padding:20px; color:#718096;">No hay tareas para mostrar en el Gantt</div>';
-      return;
-    }
-
-    const starts = tasks.map(t => parseISODateUTC(t.startDate));
-    const ends = tasks.map(t => parseISODateUTC(t.endDate));
-
-    let startDate = new Date(Math.min(...starts.map(d => d.getTime())));
-    let endDate = new Date(Math.max(...ends.map(d => d.getTime())));
-    startDate = new Date(startDate.getTime() - 7*86400000);
-    endDate = new Date(endDate.getTime() + 7*86400000);
-
-    const totalDays = Math.max(1, daysBetweenUTC(startDate, endDate));
-    const monthNames = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-
-    const months = [];
-    let cursor = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), 1));
-    const endCursor = new Date(Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), 1));
-    while (cursor <= endCursor) {
-      months.push(new Date(cursor.getTime()));
-      cursor = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth()+1, 1));
-    }
-
-    let html = '<div class="gantt-chart">';
-    html += '<div class="gantt-header"><div class="gantt-task-name">Tarea</div><div class="gantt-timeline">';
-    months.forEach(mStart => {
-      const mEnd = new Date(Date.UTC(mStart.getUTCFullYear(), mStart.getUTCMonth()+1, 1));
-      const segStart = (mStart < startDate) ? startDate : mStart;
-      const segEnd = (mEnd > endDate) ? endDate : mEnd;
-      const segDays = Math.max(0, daysBetweenUTC(segStart, segEnd));
-      const flex = segDays / totalDays;
-      const label = `${monthNames[mStart.getUTCMonth()]} ${String(mStart.getUTCFullYear()).slice(2)}`;
-      html += `<div style="flex:${flex}; text-align:center;">${label}</div>`;
-    });
-    html += "</div></div>";
-
-    const colors = { pending:"#e89e3c", "in-progress":"#003d82", completed:"#48bb78", blocked:"#f56565" };
-    sortTasksByDate(tasks).forEach(t => {
-      const taskStart = parseISODateUTC(t.startDate);
-      const taskEnd = parseISODateUTC(t.endDate);
-      const daysFromStart = daysBetweenUTC(startDate, taskStart);
-      const taskDuration = Math.max(1, daysBetweenUTC(taskStart, taskEnd));
-      const left = (daysFromStart / totalDays) * 100;
-      const width = (taskDuration / totalDays) * 100;
-
-      html += `<div class="gantt-row">
-        <div class="gantt-task-name">${t.name || ""}</div>
-        <div class="gantt-timeline">
-          <div class="gantt-bar" style="left:${left}%; width:${width}%; background:${colors[t.status] || "#003d82"};">
-            ${Number(t.progress||0)}%
-          </div>
-        </div>
-      </div>`;
-    });
-
-    html += "</div>";
-    container.innerHTML = html;
-  }
-
-  function renderTeam() {
-    const container = document.getElementById("teamList");
-    if (!container) return;
-    const team = currentProject.team || [];
-    if (!team.length) {
-      container.innerHTML = '<div style="padding:10px; color:#718096;">—</div>';
-      return;
-    }
-    container.innerHTML = team.map(m => `
-      <div class="team-member">
-        <div class="avatar">${m.initials || (m.name||"?").slice(0,1).toUpperCase()}</div>
-        <div class="member-info">
-          <div class="member-name">${m.name || ""}</div>
-          <div class="member-role">${m.role || ""}</div>
-        </div>
-      </div>
-    `).join("");
-  }
-
-  function renderCritical() {
-    const container = document.getElementById("criticalList");
-    if (!container) return;
-    const list = currentProject.critical || [];
-    container.innerHTML = list.length
-      ? list.map(c => `<div class="critical-item">${c}</div>`).join("")
-      : '<div style="padding:10px; color:#718096;">—</div>';
-  }
-
-  function normalizeCFDate(d) {
-    // acepta YYYY-MM-DD, ISO o dd/mm/yyyy (best effort)
-    if (!d) return "";
-    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
-    const iso = new Date(d);
-    if (!isNaN(iso.getTime())) return iso.toISOString().slice(0,10);
-    return d;
-  }
-
-  function sortCashflow(list) {
-    return [...(list||[])].sort((a,b) => {
-      const da = toSortableDate(normalizeCFDate(a.date));
-      const db = toSortableDate(normalizeCFDate(b.date));
-      return da - db;
-    });
-  }
-
- function renderCashflow() {
-  const container = document.getElementById("cashflowList");
-  const items = currentProject.cashflow || [];
-
-  if (!items.length) {
-    container.innerHTML = "<p style='color:#718096'>Sin movimientos</p>";
-    return;
-  }
-
-  container.innerHTML = items
-    .sort((a,b) => a.date.localeCompare(b.date))
-    .map(c => `
-      <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #e5e7eb">
-        <div>
-          <strong>${c.type}</strong> – ${c.description}<br>
-          <small>${c.date} · ${c.status}</small>
-        </div>
-        <div style="font-weight:600; color:${c.type === 'Ingreso' ? '#16a34a' : '#dc2626'}">
-          ${c.type === 'Ingreso' ? '+' : '-'} USD ${c.amount.toLocaleString()}
-        </div>
-      </div>
-    `)
-    .join("");
+function renderCritical() {
+  const container = $("criticalList");
+  if (!container || !currentProject) return;
+  const critical = currentProject.critical || [];
+  container.innerHTML = critical.map(c => `<div class="critical-item">${escapeHtml(c || "")}</div>`).join("");
 }
 
-  function updateMetrics() {
-    const tasks = currentProject.tasks || [];
-    const completed = tasks.filter(t => t.status === "completed").length;
-    const blocked = tasks.filter(t => t.status === "blocked").length;
-    const avgProgress = tasks.length
-      ? Math.round(tasks.reduce((sum, t) => sum + Number(t.progress || 0), 0) / tasks.length)
-      : 0;
+function updateMetrics() {
+  if (!currentProject) return;
+  const tasks = currentProject.tasks || [];
+  const completed = tasks.filter(t => t.status === "completed").length;
+  const blocked = tasks.filter(t => t.status === "blocked").length;
+  const avgProgress = tasks.length
+    ? Math.round(tasks.reduce((sum, t) => sum + Number(t.progress || 0), 0) / tasks.length)
+    : 0;
 
-    // Días restantes (usa meta.ganttEnd si existe; si no, la mayor endDate)
-    let endISO = null;
-    const endDates = tasks.map(t => t.endDate).filter(Boolean).sort();
-    if (endDates.length) endISO = endDates[endDates.length - 1];
-    else if (currentProject.meta?.ganttEnd) endISO = currentProject.meta.ganttEnd;
+  let endISO = null;
+  const endDates = tasks.map(t => t.endDate).filter(Boolean).sort();
+  if (endDates.length) endISO = endDates[endDates.length - 1];
+  else if (currentProject.meta?.ganttEnd) endISO = currentProject.meta.ganttEnd;
 
-    let daysRemaining = "—";
-    if (endISO) {
-      const today = new Date();
-      const end = new Date(endISO + "T00:00:00");
-      const diff = Math.ceil((end - today) / 86400000);
-      daysRemaining = String(Math.max(0, diff));
-    }
-
-    const elP = document.getElementById("metricProgress");
-    const elC = document.getElementById("metricCompleted");
-    const elD = document.getElementById("metricDays");
-    const elB = document.getElementById("metricBlocked");
-    if (elP) elP.textContent = avgProgress + "%";
-    if (elC) elC.textContent = `${completed}/${tasks.length}`;
-    if (elD) elD.textContent = daysRemaining;
-    if (elB) elB.textContent = String(blocked);
+  let daysRemaining = "—";
+  if (endISO) {
+    const today = new Date();
+    const end = new Date(endISO + "T00:00:00");
+    const diff = Math.ceil((end - today) / 86400000);
+    daysRemaining = String(Math.max(0, diff));
   }
 
-  function renderAll() {
-    renderProjectSelector();
-    renderProjectMeta();
-    renderTasks();
-    renderGantt();
-    renderTeam();
-    renderCashflow();
-    renderCritical();
-    updateMetrics();
-    updateProjectInfoButton(currentProjectKey);
-            bindUIEvents();
-  }
+  const elProg = $("metricProgress");
+  const elComp = $("metricCompleted");
+  const elDays = $("metricDays");
+  const elBlocked = $("metricBlocked");
+  if (elProg) elProg.textContent = avgProgress + "%";
+  if (elComp) elComp.textContent = `${completed}/${tasks.length}`;
+  if (elDays) elDays.textContent = daysRemaining;
+  if (elBlocked) elBlocked.textContent = String(blocked);
+}
 
-  // ===== Modal Tareas =====
-  const taskModal = document.getElementById("taskModal");
-  const taskForm = document.getElementById("taskForm");
-  const taskModalTitle = document.getElementById("taskModalTitle");
-  const taskName = document.getElementById("taskName");
-  const taskDesc = document.getElementById("taskDesc");
-  const taskOwner = document.getElementById("taskOwner");
-  const taskStatus = document.getElementById("taskStatus");
-  const taskStart = document.getElementById("taskStart");
-  const taskEnd = document.getElementById("taskEnd");
-  const taskProgress = document.getElementById("taskProgress");
-
-  function openTaskModalNew() {
-    editingTaskRecordId = null;
-    if (taskModalTitle) taskModalTitle.textContent = "Nueva Tarea";
-    taskForm.reset();
-    taskModal.classList.add("active");
-  }
-
-  function openTaskModalEdit(recordId) {
-    const t = (currentProject.tasks || []).find(x => x.recordId === recordId);
-    if (!t) return;
-    editingTaskRecordId = recordId;
-    if (taskModalTitle) taskModalTitle.textContent = "Editar Tarea";
-    taskName.value = t.name || "";
-    taskDesc.value = t.description || "";
-    taskOwner.value = t.owner || "";
-    taskStatus.value = t.status || "pending";
-    taskStart.value = t.startDate || "";
-    taskEnd.value = t.endDate || "";
-    taskProgress.value = Number(t.progress || 0);
-    taskModal.classList.add("active");
-  }
-
-  function closeTaskModal() {
-    taskModal.classList.remove("active");
-  }
-
-  async function saveTask() {
-    const payload = {
-      name: taskName.value.trim(),
-      description: taskDesc.value.trim(),
-      owner: taskOwner.value,
-      status: taskStatus.value,
-      startDate: taskStart.value,
-      endDate: taskEnd.value,
-      progress: Number(taskProgress.value || 0),
-    };
-
-    try {
-      if (!identityUser) {
-        alert("Necesitás iniciar sesión para editar/crear.");
-        if (window.netlifyIdentity) window.netlifyIdentity.open();
-        return;
-      }
-
-      if (editingTaskRecordId) {
-        await updateTaskRemote(editingTaskRecordId, payload);
-      } else {
-        await createTaskRemote(payload);
-      }
-
-      closeTaskModal();
-      await refreshAndRender();
-      showConnectionStatus(true, "Guardado en Airtable");
-    } catch(e) {
-      console.error(e);
-      showConnectionStatus(false, "Error guardando en Airtable");
-      alert("Error guardando en Airtable. Revisá consola.");
-    }
-  }
-
-  // ===== Modal Cashflow =====
-  const cashflowModal = document.getElementById("cashflowModal");
-  const cashflowForm = document.getElementById("cashflowForm");
-  const cashflowModalTitle = document.getElementById("cashflowModalTitle");
-  const cfDate = document.getElementById("cfDate");
-  const cfType = document.getElementById("cfType");
-  const cfDescription = document.getElementById("cfDescription");
-  const cfParty = document.getElementById("cfParty");
-  const cfAmount = document.getElementById("cfAmount");
-  const cfCurrency = document.getElementById("cfCurrency");
-  const cfStatus = document.getElementById("cfStatus");
-  const cfNotes = document.getElementById("cfNotes");
-
-  function openCashflowModalNew() {
-    editingCashflowRecordId = null;
-    cashflowForm.reset();
-    cfCurrency.value = "USD";
-    cfType.value = "Cobro";
-    cfStatus.value = "Planificado";
-    if (cashflowModalTitle) cashflowModalTitle.textContent = "Nuevo evento de Cashflow";
-    cashflowModal.classList.add("active");
-  }
-
-  function openCashflowModalEdit(recordId) {
-    const e = (currentProject.cashflow || []).find(x => x.recordId === recordId);
-    if (!e) return;
-    editingCashflowRecordId = recordId;
-    if (cashflowModalTitle) cashflowModalTitle.textContent = "Editar evento de Cashflow";
-
-    cfDate.value = normalizeCFDate(e.date);
-    cfType.value = e.type || "Cobro";
-    cfDescription.value = e.description || "";
-    cfParty.value = e.party || "";
-    cfAmount.value = e.amount ?? "";
-    cfCurrency.value = e.currency || "USD";
-    cfStatus.value = e.status || "Planificado";
-    cfNotes.value = e.notes || "";
-
-    cashflowModal.classList.add("active");
-  }
-
-  function closeCashflowModal() {
-    cashflowModal.classList.remove("active");
-  }
-
-  async function saveCashflow() {
-    const payload = {
-      date: cfDate.value,
-      type: cfType.value,
-      description: cfDescription.value.trim(),
-      party: cfParty.value.trim(),
-      amount: Number(cfAmount.value || 0),
-      currency: cfCurrency.value,
-      status: cfStatus.value,
-      notes: cfNotes.value.trim(),
-    };
-
-    try {
-      if (!identityUser) {
-        alert("Necesitás iniciar sesión para editar/crear.");
-        if (window.netlifyIdentity) window.netlifyIdentity.open();
-        return;
-      }
-
-      if (editingCashflowRecordId) {
-        await updateCashflowRemote(editingCashflowRecordId, payload);
-      } else {
-        await createCashflowRemote(payload);
-      }
-
-      closeCashflowModal();
-      await refreshAndRender();
-      showConnectionStatus(true, "Cashflow guardado en Airtable");
-    } catch(e) {
-      console.error(e);
-      showConnectionStatus(false, "Error guardando cashflow");
-      alert("Error guardando cashflow. Revisá consola.");
-    }
-  }
-
-  // ===== Export / Print =====
-  function exportGantt() {
-    const data = JSON.stringify(currentProject, null, 2);
-    const blob = new Blob([data], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `proyecto-${currentProjectKey || "dashboard"}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  function exportPDF() {
-    // Usamos impresión (Save as PDF). El CSS @media print ya está definido en tu estilo.
-    document.documentElement.classList.add("is-printing");
-    window.print();
-    setTimeout(() => document.documentElement.classList.remove("is-printing"), 500);
-  }
-
-  // ===== Wiring de eventos UI =====
-  function bindUIEvents() {
-    // Tabs
-    document.querySelectorAll(".tab").forEach(tab => {
-      tab.addEventListener("click", () => {
-        currentTab = tab.getAttribute("data-tab");
-        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-        tab.classList.add("active");
-        renderTasks();
-      });
-    });
-
-    // Tareas: click para editar (delegación)
-    const tasksList = document.getElementById("tasksList");
-    if (tasksList) {
-      tasksList.addEventListener("click", (ev) => {
-        const item = ev.target.closest(".task-item");
-        if (!item) return;
-        const rid = item.getAttribute("data-record-id");
-        if (!rid) return;
-        openTaskModalEdit(rid);
-      });
-    }
-
-    // Cashflow: click para editar (delegación)
-    const cfList = document.getElementById("cashflowList");
-    if (cfList) {
-      cfList.addEventListener("click", (ev) => {
-        const item = ev.target.closest("[data-cf-id]");
-        if (!item) return;
-        const rid = item.getAttribute("data-cf-id");
-        if (!rid) return;
-        openCashflowModalEdit(rid);
-      });
-    }
-
-    // Botones
-    document.getElementById("btnNewTask")?.addEventListener("click", openTaskModalNew);
-    document.getElementById("btnNewCashflow")?.addEventListener("click", openCashflowModalNew);
-    document.getElementById("btnExportGantt")?.addEventListener("click", exportGantt);
-    document.getElementById("btnPrint")?.addEventListener("click", () => window.print());
-    document.getElementById("btnExportPDF")?.addEventListener("click", exportPDF);
-
-    document.getElementById("btnCancelTask")?.addEventListener("click", closeTaskModal);
-    document.getElementById("btnCancelCashflow")?.addEventListener("click", closeCashflowModal);
-
-    taskForm?.addEventListener("submit", (e) => { e.preventDefault(); saveTask(); });
-    cashflowForm?.addEventListener("submit", (e) => { e.preventDefault(); saveCashflow(); });
-
-    // Modal click-outside
-    taskModal?.addEventListener("click", (e) => { if (e.target === taskModal) closeTaskModal(); });
-    cashflowModal?.addEventListener("click", (e) => { if (e.target === cashflowModal) closeCashflowModal(); });
-
-    // Logout
-    document.getElementById("btnLogout")?.addEventListener("click", () => {
-      if (window.netlifyIdentity) window.netlifyIdentity.logout();
-    });
-  }
-
-  // ===== Auth + Boot =====
-  function applyAuthUI() {
-    const btnLogout = document.getElementById("btnLogout");
-    const canEdit = !!identityUser;
-    if (btnLogout) btnLogout.style.display = canEdit ? "inline-flex" : "none";
-
-    // Habilitar/deshabilitar botones de alta
-    const btnTask = document.getElementById("btnNewTask");
-    const btnCF = document.getElementById("btnNewCashflow");
-    [btnTask, btnCF].forEach(b => {
-      if (!b) return;
-      b.disabled = !canEdit;
-      b.style.opacity = canEdit ? "1" : "0.55";
-      b.style.cursor = canEdit ? "pointer" : "not-allowed";
-      if (!canEdit) b.title = "Iniciá sesión para editar";
-      else b.title = "";
-    });
-  }
-
-async function boot() {
-  const backendProjects = await loadFromBackend();
-  projects = backendProjects;
-
-  currentProjectKey = Object.keys(projects)[0];
-  currentProject = projects[currentProjectKey];
-
-  // 👇 lo que antes hacía init()
-  renderProjectSelector();
+function renderAll() {
   renderProjectMeta();
   renderTasks();
   renderGantt();
   renderTeam();
   renderCritical();
   updateMetrics();
-  renderCashflow();
-
-  updateProjectInfoButton(currentProjectKey);
-            bindUIEvents();
-
-  bindUIEvents(); // si existe
 }
 
+// ===== Modal / CRUD =====
+function showModal() {
+  editingTaskRecordId = null;
+  const form = $("taskForm");
+  if (form) form.reset();
+  const modal = $("taskModal");
+  if (modal) modal.classList.add("active");
+}
 
+function closeModal() {
+  const modal = $("taskModal");
+  if (modal) modal.classList.remove("active");
+}
 
-  // IMPORTANTÍSIMO: esperar a window.load (asegura que netlify-identity-widget ya esté)
+function editTask(recordId) {
+  if (!recordId) return;
+  const task = (currentProject?.tasks || []).find(t => t.recordId === recordId);
+  if (!task) return;
 
-/* ===== Netlify Identity gate (client-side) =====
-   Nota: Esto no "protege" el HTML (es estático), pero combinado con funciones que exigen JWT
-   evita exponer datos si no hay login.
-*/
+  editingTaskRecordId = recordId;
+  $("taskName").value = task.name || "";
+  $("taskDesc").value = task.description || "";
+  $("taskOwner").value = task.owner || "";
+  $("taskStatus").value = task.status || "pending";
+  $("taskStart").value = task.startDate || "";
+  $("taskEnd").value = task.endDate || "";
+  $("taskProgress").value = Number(task.progress || 0);
 
-async function getAuthHeaders() {
-  const headers = { "Content-Type": "application/json" };
-  const user = window.netlifyIdentity?.currentUser?.() || null;
-  if (!user) return headers;
+  $("taskModal").classList.add("active");
+}
+
+async function saveTask() {
+  const taskData = {
+    name: $("taskName").value,
+    description: $("taskDesc").value,
+    owner: $("taskOwner").value,
+    status: $("taskStatus").value,
+    startDate: $("taskStart").value || "",
+    endDate: $("taskEnd").value || "",
+    progress: Number($("taskProgress").value || 0),
+  };
 
   try {
-    // Prefer jwt() (more reliable across widget versions)
-    const token = (typeof user.jwt === "function")
-      ? await user.jwt()
-      : (user.token && user.token.access_token) || null;
-    if (token) headers["Authorization"] = "Bearer " + token;
-  } catch (e) {
-    console.warn("No se pudo obtener JWT de Netlify Identity:", e);
-  }
-  return headers;
-}
-
- 
-// ===== UI EVENTS =====
-function bindUIEvents() {
-  // Logout button
-  const btnLogout = document.getElementById("btnLogout");
-  if (btnLogout) {
-    btnLogout.addEventListener("click", () => {
-      try { window.netlifyIdentity.logout(); } catch(e) {}
-    });
-  }
-
-  // Click on task -> edit
-  const tasksList = document.getElementById("tasksList");
-  if (tasksList) {
-    tasksList.addEventListener("click", (ev) => {
-      const card = ev.target.closest(".task-item");
-      if (!card) return;
-      const rid = card.getAttribute("data-record-id");
-      if (!rid) return; // tareas sin recordId no editables
-      editTask(rid);
-    });
-  }
-}
-
-function applyAuthUI(user) {
-  const btnLogout = document.getElementById("btnLogout");
-  if (btnLogout) btnLogout.style.display = user ? "inline-flex" : "none";
-}
-
-
-
-  // --- AUTH (Netlify Identity) - robusto ---
-  (function () {
-    let started = false;
-
-    function startApp() {
-      if (started) return;
-      started = true;
-      boot(); // <- tu boot real (carga Airtable + render)
-    }
-
-    function waitForIdentity(maxMs = 8000) {
-      return new Promise((resolve, reject) => {
-        const t0 = Date.now();
-        const tick = () => {
-          if (window.netlifyIdentity) return resolve(window.netlifyIdentity);
-          if (Date.now() - t0 > maxMs) return reject(new Error("Netlify Identity no cargó"));
-          setTimeout(tick, 50);
-        };
-        tick();
+    if (editingTaskRecordId) {
+      await updateTaskRemote(editingTaskRecordId, taskData);
+      const t = currentProject.tasks.find(x => x.recordId === editingTaskRecordId);
+      if (t) Object.assign(t, taskData);
+    } else {
+      const created = await createTaskRemote(taskData);
+      currentProject.tasks.push({
+        ...taskData,
+        recordId: created.id, // Airtable record id
       });
     }
+    persistProjects();
+    closeModal();
+    renderTasks();
+    renderGantt();
+    updateMetrics();
+    showConnectionStatus(true, "Guardado en Airtable");
+  } catch (e) {
+    console.error(e);
+    showConnectionStatus(false, "Error guardando en Airtable");
+    alert("Error guardando en Airtable. Revisá consola.");
+  }
+}
 
-    async function requireLoginThenBoot() {
-      try {
-        const ni = await waitForIdentity();
+// ===== Export =====
+function exportGantt() {
+  const data = JSON.stringify(currentProject, null, 2);
+  const blob = new Blob([data], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = (currentProjectKey || "proyecto") + ".json";
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
-        // IMPORTANTE: init una sola vez
-        ni.init();
+// ===== Bootstrap =====
+function bindUIEvents() {
+  // Tabs
+  document.querySelectorAll(".tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+      currentTab = tab.getAttribute("data-tab");
+      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+      tab.classList.add("active");
+      renderTasks();
+    });
+  });
 
-        ni.on("init", (user) => {
-          console.log("[Identity] init user:", user);
+  // Task form
+  const form = $("taskForm");
+  if (form) {
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      saveTask();
+    });
+  }
+}
 
-          if (user) {
-            // ✅ si ya estaba logueado (refresh)
-            startApp();
-          } else {
-            // ❌ no logueado: abrir modal
-            ni.open("login");
-          }
-        });
-
-        ni.on("login", (user) => {
-          console.log("[Identity] login:", user?.email);
-          ni.close();
-          startApp();
-        });
-
-        ni.on("logout", () => {
-          console.log("[Identity] logout");
-          // reset limpio para no quedar en estados raros
-          location.reload();
-        });
-
-        // Si por algún motivo init ya ocurrió ANTES de que enganchemos el handler,
-        // usamos currentUser como fallback:
-        const u = ni.currentUser();
-        if (u) {
-          console.log("[Identity] currentUser fallback:", u.email);
-          startApp();
-        }
-      } catch (e) {
-        console.warn("[Auth] Sin Identity, modo abierto:", e);
-        startApp(); // fallback sin auth (si querés, esto lo podés eliminar)
-      }
+async function startApp() {
+  try {
+    projects = await loadFromBackend();
+    showConnectionStatus(true, "Conectado a Airtable");
+  } catch (e) {
+    console.warn(e);
+    const cached = loadProjectsFromStorage();
+    if (cached) {
+      projects = cached;
+      showConnectionStatus(false, "Sin conexión a Airtable (cache local)");
+    } else {
+      projects = {};
+      showConnectionStatus(false, "Sin datos (no Airtable / no cache)");
     }
+  }
 
-    document.addEventListener("DOMContentLoaded", requireLoginThenBoot);
+  const keys = Object.keys(projects);
+  if (!keys.length) {
+    currentProjectKey = null;
+    currentProject = { meta: { name: "Sin proyectos", subtitle: "", statusLabel: "" }, tasks: [], team: [], critical: [] };
+  } else {
+    currentProjectKey = keys[0];
+    currentProject = projects[currentProjectKey];
+  }
 
-    window.doLogout = function () {
-      if (window.netlifyIdentity) window.netlifyIdentity.logout();
-    };
-  })();
+  updateProjectInfoButton(currentProjectKey);
+  renderProjectSelector();
+  bindUIEvents();
+  renderAll();
+}
+
+// ===== HTML escaping helpers (for safe innerHTML) =====
+function escapeHtml(str) {
+  return String(str || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+function escapeAttr(str) {
+  return escapeHtml(str).replaceAll("\n", " ");
+}
+
+// Expose a few functions for inline onclick handlers
+window.showModal = showModal;
+window.closeModal = closeModal;
+window.editTask = editTask;
+window.exportGantt = exportGantt;
+
+// Start
+document.addEventListener("DOMContentLoaded", requireLoginThenStart);
     
 </script>
 
