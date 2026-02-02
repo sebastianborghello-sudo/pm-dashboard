@@ -588,41 +588,68 @@ body.pdf-mode .gantt-container {
   }
 
   // ===== Backend (Airtable via Netlify Functions) =====
-  async function loadFromBackend() {
-    const r = await fetch("/.netlify/functions/airtable", {
-      cache: "no-store",
-      headers: getAuthHeaders({ "Accept": "application/json" })
-    });
-    if (!r.ok) {
-      const t = await r.text();
-      throw new Error(`Airtable backend error: ${r.status} ${t}`);
+ async function loadFromBackend() {
+  const user = netlifyIdentity.currentUser();
+  if (!user) throw new Error("No autenticado");
+
+  const token = user.token.access_token;
+
+  const r = await fetch('/.netlify/functions/airtable', {
+    cache: 'no-store',
+    headers: {
+      Authorization: `Bearer ${token}`
     }
-    const data = await r.json();
-    if (!data || !data.projects) throw new Error("Respuesta inválida del backend");
-    return data.projects;
+  });
+
+  if (!r.ok) {
+    const t = await r.text();
+    throw new Error(`Airtable backend error: ${r.status} ${t}`);
   }
 
-  async function createTaskRemote(task) {
-    const r = await fetch("/.netlify/functions/airtable/tasks", {
-      method: "POST",
-      headers: getAuthHeaders(),
-      body: JSON.stringify({ projectKey: currentProjectKey, ...task })
-    });
-    const data = await r.json().catch(() => ({}));
-    if (!r.ok || !data.ok) throw new Error(data?.error || "Error creando task");
-    return data.record;
+  const data = await r.json();
+  if (!data || !data.projects) {
+    throw new Error("Respuesta inválida del backend");
   }
 
-  async function updateTaskRemote(recordId, task) {
-    const r = await fetch(`/.netlify/functions/airtable/tasks/${recordId}`, {
-      method: "PATCH",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(task)
-    });
-    const data = await r.json().catch(() => ({}));
-    if (!r.ok || !data.ok) throw new Error(data?.error || "Error actualizando task");
-    return data.record;
-  }
+  return data.projects;
+}
+
+
+async function createTaskRemote(task) {
+  const token = netlifyIdentity.currentUser().token.access_token;
+
+  const r = await fetch("/.netlify/functions/airtable/tasks", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({ projectKey: currentProjectKey, ...task }),
+  });
+
+  const data = await r.json();
+  if (!r.ok || !data.ok) throw new Error(data.error || "Error creando task");
+  return data.record;
+}
+
+
+async function updateTaskRemote(recordId, task) {
+  const token = netlifyIdentity.currentUser().token.access_token;
+
+  const r = await fetch(`/.netlify/functions/airtable/tasks/${recordId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(task),
+  });
+
+  const data = await r.json();
+  if (!r.ok || !data.ok) throw new Error(data.error || "Error actualizando task");
+  return data.record;
+}
+
 
   async function createCashflowRemote(evt) {
     const r = await fetch("/.netlify/functions/airtable/cashflow", {
