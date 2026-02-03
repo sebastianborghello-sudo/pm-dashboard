@@ -346,6 +346,15 @@ body.pdf-mode .gantt-container {
               <div class="metric-label">Bloqueadores</div>
               <div class="metric-value" id="metricBlocked">—</div>
             </div>
+            <div class="card">
+  <div class="card-header">
+    <span class="card-title"><i class="fa-solid fa-money-bill-wave"></i> Cashflow</span>
+    <button class="btn btn-primary" onclick="showCashModal()"><i class="fa-solid fa-plus"></i> Nuevo</button>
+  </div>
+  <div id="cashSummary" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:12px;"></div>
+  <div id="cashTimeline"></div>
+</div>
+
   
           </div>
         </div>
@@ -429,69 +438,70 @@ body.pdf-mode .gantt-container {
   </div>
 
   <!-- Modal Cashflow -->
-  <div id="cashflowModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header" id="cashflowModalTitle">Nuevo evento de Cashflow</div>
-      <form id="cashflowForm">
-        <div class="form-group">
-          <label class="form-label">Fecha</label>
-          <input type="date" class="form-input" id="cfDate" required>
-        </div>
+  <div id="cashModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">Movimiento de Cashflow</div>
 
-        <div class="form-group">
-          <label class="form-label">Tipo</label>
-          <select class="form-select" id="cfType" required>
-            <option value="Cobro">Cobro</option>
-            <option value="Pago">Pago</option>
-          </select>
-        </div>
+    <form id="cashForm">
+      <div class="form-group">
+        <label class="form-label">Concept</label>
+        <input class="form-input" id="cfConcept" required />
+      </div>
 
-        <div class="form-group">
-          <label class="form-label">Concepto</label>
-          <input type="text" class="form-input" id="cfType" placeholder="Ej: Cobro hito entrega / Pago proveedor" required>
-        </div>
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input type="date" class="form-input" id="cfDate" required />
+      </div>
 
-        <div class="form-group">
-          <label class="form-label">Contraparte</label>
-          <input type="text" class="form-input" id="cfParty" placeholder="Ej: Banco Macro / Intermaco / Qualix">
-        </div>
+      <div class="form-group">
+        <label class="form-label">Type</label>
+        <select class="form-select" id="cfType" required>
+          <option value="Cobro">Cobro</option>
+          <option value="Pago">Pago</option>
+        </select>
+      </div>
 
-        <div class="form-group" style="display:grid; grid-template-columns: 1fr 140px; gap:10px;">
-          <div>
-            <label class="form-label">Monto</label>
-            <input type="number" class="form-input" id="cfAmount" step="0.01" required>
-          </div>
-          <div>
-            <label class="form-label">Moneda</label>
-            <select class="form-select" id="cfCurrency">
-              <option value="USD">USD</option>
-              <option value="ARS">ARS</option>
-              <option value="EUR">EUR</option>
-            </select>
-          </div>
-        </div>
+      <div class="form-group">
+        <label class="form-label">Amount</label>
+        <input type="number" step="0.01" class="form-input" id="cfAmount" required />
+      </div>
 
-        <div class="form-group">
-          <label class="form-label">Estado</label>
-          <select class="form-select" id="cfStatus">
-            <option value="Planificado">Planificado</option>
-            <option value="Confirmado">Confirmado</option>
-            <option value="Ejecutado">Ejecutado</option>
-          </select>
-        </div>
+      <div class="form-group">
+        <label class="form-label">Currency</label>
+        <select class="form-select" id="cfCurrency">
+          <option value="USD">USD</option>
+          <option value="ARS">ARS</option>
+        </select>
+      </div>
 
-        <div class="form-group">
-          <label class="form-label">Notas</label>
-          <textarea class="form-textarea" id="cfNotes" rows="3"></textarea>
-        </div>
+      <div class="form-group">
+        <label class="form-label">Party</label>
+        <input class="form-input" id="cfParty" />
+      </div>
 
-        <div class="form-actions">
-          <button type="button" class="btn btn-white" id="btnCancelCashflow">Cancelar</button>
-          <button type="submit" class="btn btn-success">Guardar</button>
-        </div>
-      </form>
-    </div>
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        <input class="form-input" id="cfStatus" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-textarea" id="cfNotes" rows="3"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Relacionado a tarea</label>
+        <input class="form-input" id="cfRelatedTask" />
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-white" onclick="closeCashModal()">Cancelar</button>
+        <button type="submit" class="btn btn-success">Guardar</button>
+      </div>
+    </form>
   </div>
+</div>
+
 
   <script>
   /* ===============================
@@ -653,6 +663,158 @@ async function apiJSON(method, url, body) {
   if (!r.ok) throw new Error(`${method} ${url} -> ${r.status} ${JSON.stringify(data)}`);
   return data;
 }
+    // ===== Cashflow API =====
+async function createCashflowRemote(item) {
+  const r = await fetch("/.netlify/functions/airtable/cashflow", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ projectKey: currentProjectKey, ...item }),
+  });
+  const data = await r.json();
+  if (!r.ok || !data.ok) throw new Error(data?.error || "Error creando cashflow");
+  return data.record; // record Airtable
+}
+
+async function updateCashflowRemote(recordId, item) {
+  const r = await fetch(`/.netlify/functions/airtable/cashflow/${recordId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(item),
+  });
+  const data = await r.json();
+  if (!r.ok || !data.ok) throw new Error(data?.error || "Error actualizando cashflow");
+  return data.record;
+}
+
+// ===== Cashflow UI =====
+let editingCashRecordId = null;
+
+function showCashModal(recordId = null) {
+  editingCashRecordId = recordId;
+
+  const form = document.getElementById("cashForm");
+  form.reset();
+
+  if (recordId) {
+    const it = (currentProject.cashflow || []).find(x => x.recordId === recordId);
+    if (!it) return alert("Movimiento no encontrado");
+
+    cfConcept.value = it.concept || "";
+    cfDate.value = it.date || "";
+    cfType.value = it.type || "Cobro";
+    cfAmount.value = it.amount ?? 0;
+    cfCurrency.value = it.currency || "USD";
+    cfParty.value = it.party || "";
+    cfStatus.value = it.status || "";
+    cfNotes.value = it.notes || "";
+    cfRelatedTask.value = it.relatedTask || "";
+  }
+
+  document.getElementById("cashModal").classList.add("active");
+}
+
+function closeCashModal() {
+  document.getElementById("cashModal").classList.remove("active");
+}
+
+function sortCashflow(items) {
+  return [...(items || [])].sort((a,b) => (a.date || "").localeCompare(b.date || ""));
+}
+
+function moneyFmt(n, currency="USD") {
+  try {
+    return new Intl.NumberFormat("es-AR", { style:"currency", currency }).format(Number(n || 0));
+  } catch {
+    return `${currency} ${Number(n || 0).toFixed(2)}`;
+  }
+}
+
+function renderCashflow() {
+  const items = sortCashflow(currentProject.cashflow || []);
+  const tl = document.getElementById("cashTimeline");
+  const sum = document.getElementById("cashSummary");
+
+  if (!tl || !sum) return;
+
+  if (!items.length) {
+    sum.innerHTML = "";
+    tl.innerHTML = `<div style="padding:12px; color:#718096;">No hay movimientos de cashflow</div>`;
+    return;
+  }
+
+  const totalIn = items.filter(x => (x.type || "").toLowerCase() === "cobro").reduce((s,x)=> s + (Number(x.amount)||0), 0);
+  const totalOut = items.filter(x => (x.type || "").toLowerCase() === "pago").reduce((s,x)=> s + (Number(x.amount)||0), 0);
+  const net = totalIn - totalOut;
+  const cur = (items.find(x => x.currency)?.currency) || "USD";
+
+  sum.innerHTML = `
+    <div class="metric-card metric-ok" style="padding:12px;">
+      <div class="metric-label">Cobros</div><div class="metric-value" style="font-size:18px;">${moneyFmt(totalIn, cur)}</div>
+    </div>
+    <div class="metric-card metric-bad" style="padding:12px;">
+      <div class="metric-label">Pagos</div><div class="metric-value" style="font-size:18px;">${moneyFmt(totalOut, cur)}</div>
+    </div>
+    <div class="metric-card metric-accent" style="padding:12px;">
+      <div class="metric-label">Neto</div><div class="metric-value" style="font-size:18px;">${moneyFmt(net, cur)}</div>
+    </div>
+  `;
+
+  tl.innerHTML = items.map(it => {
+    const badge = (it.type || "").toLowerCase() === "pago"
+      ? `<span class="task-status" style="background:#dc2626;color:#fff;">Pago</span>`
+      : `<span class="task-status" style="background:#16a34a;color:#fff;">Cobro</span>`;
+
+    return `
+      <div class="task-item" style="cursor:pointer;" onclick="showCashModal('${it.recordId}')">
+        <div class="task-header">
+          <div class="task-title">${it.concept || "-"}</div>
+          ${badge}
+        </div>
+        <div style="color:#718096;font-size:0.9em;margin:5px 0;">
+          <b>${it.date || ""}</b> · ${it.party || ""} · ${it.status || ""}
+        </div>
+        <div style="font-weight:700;">${moneyFmt(it.amount, it.currency || "USD")}</div>
+        ${it.notes ? `<div style="color:#718096;font-size:0.85em;margin-top:6px;">${it.notes}</div>` : ""}
+      </div>
+    `;
+  }).join("");
+}
+
+async function saveCashflow(e) {
+  if (e) e.preventDefault();
+
+  const item = {
+    concept: cfConcept.value,
+    date: cfDate.value,
+    type: cfType.value,
+    amount: Number(cfAmount.value || 0),
+    currency: cfCurrency.value,
+    party: cfParty.value,
+    status: cfStatus.value,
+    notes: cfNotes.value,
+    relatedTask: cfRelatedTask.value,
+  };
+
+  try {
+    if (editingCashRecordId) {
+      await updateCashflowRemote(editingCashRecordId, item);
+      const it = currentProject.cashflow.find(x => x.recordId === editingCashRecordId);
+      Object.assign(it, item);
+    } else {
+      const created = await createCashflowRemote(item);
+      currentProject.cashflow.push({ ...item, recordId: created.id });
+    }
+
+    closeCashModal();
+    renderCashflow();
+    showConnectionStatus(true, "Cashflow guardado en Airtable");
+  } catch (err) {
+    console.error(err);
+    showConnectionStatus(false, "Error guardando Cashflow");
+    alert("Error guardando Cashflow. Revisá consola / function.");
+  }
+}
+
 
 async function createTaskRemote(taskData) {
   const payload = { projectKey: currentProjectKey, ...taskData };
@@ -924,6 +1086,25 @@ function renderAll() {
   renderTeam();
   renderCritical();
   updateMetrics();
+
+  / ✅ Cashflow
+  renderCashflow();
+  document.getElementById("cashForm")?.addEventListener("submit", saveCashflow);
+
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+      currentTab = this.getAttribute('data-tab');
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+      renderTasks();
+    });
+  });
+
+  document.getElementById('taskForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    saveTask();
+  });
+}
 }
 
 // ===== Modal / CRUD =====
