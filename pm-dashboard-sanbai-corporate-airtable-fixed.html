@@ -798,9 +798,9 @@ function renderCashflow() {
         <span><div class="metric-label">Pagos</div><div class="metric-value" style="font-size:18px;">${moneyFmt(totalOut, cur)}</div></span>
     </div>
     <div class="metric-card metric-accent" style="padding:12px;">
-      <span><div class="metric-label">Neto</div><div class="metric-value" style="font-size:18px;">${moneyFmt(net, cur)}</div>v
+      <span><div class="metric-label">Neto</div><div class="metric-value" style="font-size:18px;">${moneyFmt(net, cur)}</div>/span>
     </div>
-  `;
+  ;
 
   tl.innerHTML = items.map(it => {
     const badge = (it.type || "").toLowerCase() === "pago"
