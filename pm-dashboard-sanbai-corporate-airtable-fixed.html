@@ -151,7 +151,21 @@
 
     .avatar{ background: linear-gradient(135deg, var(--sanbai-dark) 0%, var(--sanbai-gray) 100%); }
     
- 
+ #cashSummary{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+#cashSummary .metric-card{
+  min-width: 0;
+}
+
+/* si el panel se achica mucho, apilar */
+@media (max-width: 520px){
+  #cashSummary{ grid-template-columns: 1fr; }
+}
+
     @page {
   size: A4 landscape;
   margin: 10mm;
