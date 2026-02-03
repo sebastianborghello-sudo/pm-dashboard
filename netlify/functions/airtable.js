@@ -1,15 +1,5 @@
 // netlify/functions/airtable.js
-// Reads + writes Projects/Tasks/Team/Critical + Cashflow from Airtable.
-// Endpoints:
-//   GET    /.netlify/functions/airtable            -> { projects: { ... } }
-//   POST   /.netlify/functions/airtable/tasks      -> create task
-//   PATCH  /.netlify/functions/airtable/tasks/:id  -> update task
-//   DELETE /.netlify/functions/airtable/tasks/:id  -> delete task
-//   POST   /.netlify/functions/airtable/cashflow      -> create cash event
-//   PATCH  /.netlify/functions/airtable/cashflow/:id  -> update cash event
-//   DELETE /.netlify/functions/airtable/cashflow/:id  -> delete cash event
-
-exports.handler = async (event, context) => {
+exports.handler = async (event) => {
   try {
     const BASE_ID = process.env.AIRTABLE_BASE_ID;
     const TOKEN = process.env.AIRTABLE_TOKEN;
@@ -18,61 +8,42 @@ exports.handler = async (event, context) => {
     const TABLE_TASKS = "Tasks";
     const TABLE_TEAM = "Team";
     const TABLE_CRITICAL = "Critical";
-    const TABLE_CASHFLOW = "Cashflow"; // <-- Crear en Airtable (o renombrar aquí)
-
-    const corsHeaders = {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Content-Type",
-      "Access-Control-Allow-Methods": "GET,POST,PATCH,DELETE,OPTIONS",
-    };
+    const TABLE_CASHFLOW = "Cashflow";
 
     // CORS / preflight
     if (event.httpMethod === "OPTIONS") {
-      return { statusCode: 200, headers: corsHeaders, body: "" };
+      return {
+        statusCode: 200,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization",
+          "Access-Control-Allow-Methods": "GET,POST,PATCH,DELETE,OPTIONS",
+        },
+        body: "",
+      };
     }
 
     if (!BASE_ID || !TOKEN) {
       return {
         statusCode: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json; charset=utf-8" },
+        headers: { "Content-Type": "application/json; charset=utf-8" },
         body: JSON.stringify({ ok: false, error: "Missing env vars AIRTABLE_BASE_ID / AIRTABLE_TOKEN" }),
       };
     }
 
-    
-    // ===== Auth guard (Netlify Identity JWT) =====
-    // Requiere que el request incluya: Authorization: Bearer <token>
-    // En Netlify Functions, el usuario se expone en context.clientContext.user
-    const user = context && context.clientContext && context.clientContext.user;
-    if (!user) {
-      return {
-        statusCode: 401,
-        headers: {
-          "Content-Type": "application/json; charset=utf-8",
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Headers": "Content-Type, Authorization",
-          "Access-Control-Allow-Methods": "GET,POST,PATCH,DELETE,OPTIONS",
-        },
-        body: JSON.stringify({ ok: false, error: "Unauthorized" }),
-      };
-    }
-
-const apiList = (table) =>
+    const api = (table) =>
       `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(table)}?pageSize=100`;
 
     async function fetchAll(table) {
       let out = [];
       let offset = null;
-
       while (true) {
-        const url = offset ? `${apiList(table)}&offset=${offset}` : apiList(table);
+        const url = offset ? `${api(table)}&offset=${offset}` : api(table);
         const r = await fetch(url, { headers: { Authorization: `Bearer ${TOKEN}` } });
-
         if (!r.ok) {
           const t = await r.text();
           throw new Error(`Airtable error ${table}: ${r.status} ${t}`);
         }
-
         const data = await r.json();
         out = out.concat(data.records || []);
         if (!data.offset) break;
@@ -93,11 +64,7 @@ const apiList = (table) =>
 
       const text = await r.text();
       let data;
-      try {
-        data = text ? JSON.parse(text) : {};
-      } catch {
-        data = { raw: text };
-      }
+      try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
 
       if (!r.ok) {
         throw new Error(`Airtable write error: ${r.status} ${JSON.stringify(data)}`);
@@ -105,12 +72,12 @@ const apiList = (table) =>
       return data;
     }
 
-    // Helper: construir mapas projectKey <-> recordId
+    // Helper: construir mapas projectKey <-> projectRecordId
     async function buildProjectMaps() {
       const projectsRec = await fetchAll(TABLE_PROJECTS);
 
-      const projectIdToKey = {}; // recId -> "macro_lan"
-      const projectKeyToId = {}; // "macro_lan" -> recId
+      const projectIdToKey = {};   // recId -> "macro_lan"
+      const projectKeyToId = {};   // "macro_lan" -> recId
 
       for (const p of projectsRec) {
         const pf = p.fields || {};
@@ -127,39 +94,24 @@ const apiList = (table) =>
     const path = event.path || "";
     const base = "/.netlify/functions/airtable";
     const rest = path.startsWith(base) ? path.slice(base.length) : "";
-    const subpath = rest.replace(/^\/+/, ""); // "", "tasks", "tasks/recXXXX", "cashflow", ...
-
-    const json = (statusCode, bodyObj) => ({
-      statusCode,
-      headers: { ...corsHeaders, "Content-Type": "application/json; charset=utf-8" },
-      body: JSON.stringify(bodyObj),
-    });
-
-    const normalizeCashType = (v) => {
-      const s = String(v || "").toLowerCase().trim();
-      if (!s) return "out";
-      if (["in", "cobro", "cobrar", "ingreso", "income", "cobr", "inflow"].some((k) => s.includes(k))) return "in";
-      if (["out", "pago", "egreso", "expense", "outflow", "pay"].some((k) => s.includes(k))) return "out";
-      // default: out
-      return "out";
-    };
+    const subpath = rest.replace(/^\/+/, ""); // "", "tasks", "cashflow", "cashflow/recXXXX"
 
     // ==========================
-    // GET (Dashboard)
+    // GET  /airtable  (devuelve projects + tasks/team/critical/cashflow)
     // ==========================
     if (event.httpMethod === "GET" && (subpath === "" || subpath === "projects")) {
       const { projectsRec, projectIdToKey } = await buildProjectMaps();
 
-      const [tasksRec, teamRec, criticalRec, cashRec] = await Promise.all([
+      const [tasksRec, teamRec, criticalRec, cashflowRec] = await Promise.all([
         fetchAll(TABLE_TASKS),
         fetchAll(TABLE_TEAM),
         fetchAll(TABLE_CRITICAL),
-        fetchAll(TABLE_CASHFLOW).catch(() => []), // si aún no existe, no rompe
+        fetchAll(TABLE_CASHFLOW),
       ]);
 
       const projects = {};
 
-      // Projects
+      // Projects: Primary field = Project Key ✅
       for (const p of projectsRec) {
         const pf = p.fields || {};
         const key = pf["Project Key"];
@@ -181,7 +133,7 @@ const apiList = (table) =>
           tasks: [],
           team: [],
           critical: [],
-          cashflow: [],
+          cashflow: [], // ✅ nuevo
         };
       }
 
@@ -232,137 +184,117 @@ const apiList = (table) =>
         projects[projectKey].critical.push(cf["Text"] || "");
       }
 
-      // Cashflow
-      for (const c of cashRec) {
+      // ✅ Cashflow (Project es linked record → devuelve recId)
+      for (const c of cashflowRec) {
         const cf = c.fields || {};
         const proj = cf["Project"];
         const linkedId = Array.isArray(proj) ? proj[0] : proj;
         const projectKey = projectIdToKey[linkedId] || linkedId;
         if (!projectKey || !projects[projectKey]) continue;
 
-        const typeRaw = cf["Type"] ?? cf["Movimiento"] ?? cf["Flow"] ?? cf["Direction"];
-        const amountRaw = cf["Amount"] ?? cf["Monto"] ?? 0;
+        const amount = Number(String(cf["Amount"] ?? 0).replace(/[^0-9.-]/g, "")) || 0;
 
         projects[projectKey].cashflow.push({
           recordId: c.id,
-          type: normalizeCashType(typeRaw),
-          concept: cf["Concept"] ?? cf["Concepto"] ?? "",
-          party: cf["Party"] ?? cf["Proveedor/Cliente"] ?? cf["Contraparte"] ?? "",
-          amount: Number(amountRaw ?? 0),
-          date: cf["Date"] ? new Date(cf["Date"]).toISOString().slice(0, 10) : (cf["Fecha"] ? new Date(cf["Fecha"]).toISOString().slice(0, 10) : ""),
-          status: cf["Status"] ?? cf["Estado"] ?? "",
+          concept: cf["Concept"] || "",
+          date: cf["Date"] ? new Date(cf["Date"]).toISOString().slice(0, 10) : "",
+          type: cf["Type"] || "",            // Cobro | Pago
+          amount,
+          currency: cf["Currency"] || "USD",
+          party: cf["Party"] || "",
+          status: cf["Status"] || "",
+          notes: cf["Notes"] || "",
+          relatedTask: cf["Relacionado a tarea"] || "",
         });
       }
 
-      return json(200, { ok: true, projects });
-    }
-
-    // ==========================
-    // POST /tasks  (crear task)
-    // ==========================
-    if (event.httpMethod === "POST" && subpath === "tasks") {
-      const payload = JSON.parse(event.body || "{}");
-      const { projectKey } = payload;
-
-      if (!projectKey) return json(400, { ok: false, error: "Missing projectKey" });
-
-      const { projectKeyToId } = await buildProjectMaps();
-      const projectRecordId = projectKeyToId[projectKey];
-      if (!projectRecordId) return json(400, { ok: false, error: `Unknown projectKey: ${projectKey}` });
-
-      const fields = {
-        "Project": [projectRecordId],
-        "Name": payload.name || "",
-        "Description": payload.description || "",
-        "Owner": payload.owner || "",
-        "Status": payload.status || "pending",
-        "Progress": Number(payload.progress ?? 0),
-        ...(payload.startDate ? { "Start Date": payload.startDate } : {}),
-        ...(payload.endDate ? { "End Date": payload.endDate } : {}),
+      return {
+        statusCode: 200,
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          "Access-Control-Allow-Origin": "*",
+        },
+        body: JSON.stringify({ ok: true, projects }),
       };
-
-      const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(TABLE_TASKS)}`;
-      const created = await airtableReq("POST", url, { fields });
-      return json(200, { ok: true, record: created });
-    }
-
-    // PATCH /tasks/:recordId
-    if (event.httpMethod === "PATCH" && subpath.startsWith("tasks/")) {
-      const recordId = subpath.split("/")[1];
-      if (!recordId) return json(400, { ok: false, error: "Missing recordId" });
-
-      const payload = JSON.parse(event.body || "{}");
-      const fields = {};
-      if (payload.name !== undefined) fields["Name"] = payload.name;
-      if (payload.description !== undefined) fields["Description"] = payload.description;
-      if (payload.owner !== undefined) fields["Owner"] = payload.owner;
-      if (payload.status !== undefined) fields["Status"] = payload.status;
-      if (payload.progress !== undefined) fields["Progress"] = Number(payload.progress ?? 0);
-      if (payload.startDate !== undefined) fields["Start Date"] = payload.startDate || null;
-      if (payload.endDate !== undefined) fields["End Date"] = payload.endDate || null;
-
-      if (payload.projectKey) {
-        const { projectKeyToId } = await buildProjectMaps();
-        const projectRecordId = projectKeyToId[payload.projectKey];
-        if (!projectRecordId) throw new Error(`Unknown projectKey: ${payload.projectKey}`);
-        fields["Project"] = [projectRecordId];
-      }
-
-      const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(TABLE_TASKS)}/${recordId}`;
-      const updated = await airtableReq("PATCH", url, { fields });
-      return json(200, { ok: true, record: updated });
-    }
-
-    // DELETE /tasks/:recordId
-    if (event.httpMethod === "DELETE" && subpath.startsWith("tasks/")) {
-      const recordId = subpath.split("/")[1];
-      if (!recordId) return json(400, { ok: false, error: "Missing recordId" });
-
-      const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(TABLE_TASKS)}/${recordId}`;
-      const deleted = await airtableReq("DELETE", url);
-      return json(200, { ok: true, deleted });
     }
 
     // ==========================
-    // CASHFLOW CRUD
+    // POST /cashflow  (crear item)
+    // Body:
+    // { projectKey, concept, date, type, amount, currency, party, status, notes, relatedTask }
     // ==========================
     if (event.httpMethod === "POST" && subpath === "cashflow") {
       const payload = JSON.parse(event.body || "{}");
       const { projectKey } = payload;
-      if (!projectKey) return json(400, { ok: false, error: "Missing projectKey" });
+
+      if (!projectKey) {
+        return {
+          statusCode: 400,
+          headers: { "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*" },
+          body: JSON.stringify({ ok: false, error: "Missing projectKey" }),
+        };
+      }
 
       const { projectKeyToId } = await buildProjectMaps();
       const projectRecordId = projectKeyToId[projectKey];
-      if (!projectRecordId) return json(400, { ok: false, error: `Unknown projectKey: ${projectKey}` });
+      if (!projectRecordId) {
+        return {
+          statusCode: 400,
+          headers: { "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*" },
+          body: JSON.stringify({ ok: false, error: `Unknown projectKey: ${projectKey}` }),
+        };
+      }
 
       const fields = {
         "Project": [projectRecordId],
-        "Type": payload.type || "out",
         "Concept": payload.concept || "",
-        "Party": payload.party || "",
-        "Amount": Number(payload.amount ?? 0),
         ...(payload.date ? { "Date": payload.date } : {}),
-        ...(payload.status ? { "Status": payload.status } : {}),
+        "Type": payload.type || "",
+        "Amount": Number(payload.amount ?? 0),
+        "Currency": payload.currency || "USD",
+        "Party": payload.party || "",
+        "Status": payload.status || "",
+        "Notes": payload.notes || "",
+        "Relacionado a tarea": payload.relatedTask || "",
       };
 
       const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(TABLE_CASHFLOW)}`;
       const created = await airtableReq("POST", url, { fields });
-      return json(200, { ok: true, record: created });
+
+      return {
+        statusCode: 200,
+        headers: { "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*" },
+        body: JSON.stringify({ ok: true, record: created }),
+      };
     }
 
+    // ==========================
+    // PATCH /cashflow/:recordId
+    // ==========================
     if (event.httpMethod === "PATCH" && subpath.startsWith("cashflow/")) {
       const recordId = subpath.split("/")[1];
-      if (!recordId) return json(400, { ok: false, error: "Missing recordId" });
+      if (!recordId) {
+        return {
+          statusCode: 400,
+          headers: { "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*" },
+          body: JSON.stringify({ ok: false, error: "Missing recordId" }),
+        };
+      }
 
       const payload = JSON.parse(event.body || "{}");
       const fields = {};
-      if (payload.type !== undefined) fields["Type"] = payload.type || null;
-      if (payload.concept !== undefined) fields["Concept"] = payload.concept || "";
-      if (payload.party !== undefined) fields["Party"] = payload.party || "";
-      if (payload.amount !== undefined) fields["Amount"] = Number(payload.amount ?? 0);
-      if (payload.date !== undefined) fields["Date"] = payload.date || null;
-      if (payload.status !== undefined) fields["Status"] = payload.status || null;
 
+      if (payload.concept !== undefined) fields["Concept"] = payload.concept || "";
+      if (payload.date !== undefined) fields["Date"] = payload.date || null;
+      if (payload.type !== undefined) fields["Type"] = payload.type || "";
+      if (payload.amount !== undefined) fields["Amount"] = Number(payload.amount ?? 0);
+      if (payload.currency !== undefined) fields["Currency"] = payload.currency || "USD";
+      if (payload.party !== undefined) fields["Party"] = payload.party || "";
+      if (payload.status !== undefined) fields["Status"] = payload.status || "";
+      if (payload.notes !== undefined) fields["Notes"] = payload.notes || "";
+      if (payload.relatedTask !== undefined) fields["Relacionado a tarea"] = payload.relatedTask || "";
+
+      // opcional: cambiar de proyecto
       if (payload.projectKey) {
         const { projectKeyToId } = await buildProjectMaps();
         const projectRecordId = projectKeyToId[payload.projectKey];
@@ -372,23 +304,46 @@ const apiList = (table) =>
 
       const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(TABLE_CASHFLOW)}/${recordId}`;
       const updated = await airtableReq("PATCH", url, { fields });
-      return json(200, { ok: true, record: updated });
+
+      return {
+        statusCode: 200,
+        headers: { "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*" },
+        body: JSON.stringify({ ok: true, record: updated }),
+      };
     }
 
+    // ==========================
+    // DELETE /cashflow/:recordId
+    // ==========================
     if (event.httpMethod === "DELETE" && subpath.startsWith("cashflow/")) {
       const recordId = subpath.split("/")[1];
-      if (!recordId) return json(400, { ok: false, error: "Missing recordId" });
+      if (!recordId) {
+        return {
+          statusCode: 400,
+          headers: { "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*" },
+          body: JSON.stringify({ ok: false, error: "Missing recordId" }),
+        };
+      }
 
       const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(TABLE_CASHFLOW)}/${recordId}`;
       const deleted = await airtableReq("DELETE", url);
-      return json(200, { ok: true, deleted });
+
+      return {
+        statusCode: 200,
+        headers: { "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*" },
+        body: JSON.stringify({ ok: true, deleted }),
+      };
     }
 
-    return json(404, { ok: false, error: "Not found" });
+    return {
+      statusCode: 404,
+      headers: { "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*" },
+      body: JSON.stringify({ ok: false, error: "Not found" }),
+    };
   } catch (e) {
     return {
       statusCode: 500,
-      headers: { "Access-Control-Allow-Origin": "*", "Content-Type": "application/json; charset=utf-8" },
+      headers: { "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*" },
       body: JSON.stringify({ ok: false, error: String(e) }),
     };
   }
