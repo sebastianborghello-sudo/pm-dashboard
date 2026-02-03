@@ -798,14 +798,13 @@ function renderCashflow() {
         <span><div class="metric-label">Pagos</div><div class="metric-value" style="font-size:18px;">${moneyFmt(totalOut, cur)}</div></span>
     </div>
     <div class="metric-card metric-accent" style="padding:12px;">
-      <span><div class="metric-label">Neto</div><div class="metric-value" style="font-size:18px;">${moneyFmt(net, cur)}</div>/span>
+      <span><div class="metric-label">Neto</div><div class="metric-value" style="font-size:18px;">${moneyFmt(net, cur)}</div></span>
     </div>
-  ;
-
+`;
   tl.innerHTML = items.map(it => {
     const badge = (it.type || "").toLowerCase() === "pago"
-      ? `<span class="task-status" style="background:#dc2626;color:#fff;">Pago</span>`
-      : `<span class="task-status" style="background:#16a34a;color:#fff;">Cobro</span>`;
+      ? `<span class="task-status" style="background:#dc2626;color:#fff;">Pago </span>`
+      : `<span class="task-status" style="background:#16a34a;color:#fff;">Cobro </span>`;
 
     return `
       <div class="task-item" style="cursor:pointer;" onclick="showCashModal('${it.recordId}')">
