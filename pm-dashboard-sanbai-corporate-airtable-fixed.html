@@ -791,13 +791,14 @@ function renderCashflow() {
 
   sum.innerHTML = `
     <div class="metric-card metric-ok" style="padding:12px;">
-      <div class="metric-label">Cobros</div><div class="metric-value" style="font-size:18px;">${moneyFmt(totalIn, cur)}</div>
+      <span><div class="metric-label">Cobros</div><div class="metric-value" style="font-size:18px;">${moneyFmt(totalIn, cur)}</div></span>
     </div>
+    
     <div class="metric-card metric-bad" style="padding:12px;">
-      <div class="metric-label">Pagos</div><div class="metric-value" style="font-size:18px;">${moneyFmt(totalOut, cur)}</div>
+        <span><div class="metric-label">Pagos</div><div class="metric-value" style="font-size:18px;">${moneyFmt(totalOut, cur)}</div></span>
     </div>
     <div class="metric-card metric-accent" style="padding:12px;">
-      <div class="metric-label">Neto</div><div class="metric-value" style="font-size:18px;">${moneyFmt(net, cur)}</div>
+      <span><div class="metric-label">Neto</div><div class="metric-value" style="font-size:18px;">${moneyFmt(net, cur)}</div>v
     </div>
   `;
 
