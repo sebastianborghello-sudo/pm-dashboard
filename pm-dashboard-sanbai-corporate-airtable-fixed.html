@@ -241,6 +241,32 @@ body.pdf-mode .gantt-container {
   .gantt-container { overflow: visible !important; }
   .gantt-chart { min-width: 0 !important; }
 }
+
+    /* ===== Cashflow layout fixes ===== */
+#cashSummary{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+#cashSummary .metric-card{
+  min-width: 0;              /* clave para que no “empuje” el grid */
+  padding: 12px !important;  /* si usaste padding inline, esto lo estabiliza */
+}
+
+@media (max-width: 420px){
+  #cashSummary{
+    grid-template-columns: 1fr;
+  }
+}
+.card{
+  overflow: hidden; /* evita que algo se dibuje fuera */
+}
+#cashTimeline .task-item{
+  width: 100%;
+  max-width: 100%;
+}
+
   
   </style>
 </head>
