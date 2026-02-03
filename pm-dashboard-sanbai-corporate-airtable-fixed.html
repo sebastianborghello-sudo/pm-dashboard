@@ -150,11 +150,7 @@
     .metric-card.metric-bad{ background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%); }
 
     .avatar{ background: linear-gradient(135deg, var(--sanbai-dark) 0%, var(--sanbai-gray) 100%); }
-    /* Cashflow debe ocupar todo el ancho del bloque de Métricas (2 columnas) */
-.cashflow-card{
-  grid-column: 1 / -1;
-}
-
+    
  
     @page {
   size: A4 landscape;
@@ -377,17 +373,16 @@ body.pdf-mode .gantt-container {
               <div class="metric-label">Bloqueadores</div>
               <div class="metric-value" id="metricBlocked">—</div>
             </div>
-            <div class="card">
+   
+</div>
+<div class="card">
   <div class="card-header">
     <span class="card-title"><i class="fa-solid fa-money-bill-wave"></i> Cashflow</span>
     <button class="btn btn-primary" onclick="showCashModal()"><i class="fa-solid fa-plus"></i> Nuevo</button>
   </div>
-              <div class="card cashflow-card"></div>
 
   <div id="cashSummary" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:12px;"></div>
   <div id="cashTimeline"></div>
-</div>
-
   
           </div>
         </div>
