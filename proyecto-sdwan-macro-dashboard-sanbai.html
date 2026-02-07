@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proyecto Torre Macro - Dashboard</title>
+
+  <!-- Iconos -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <!-- HTML2PDF (multipágina, mantiene look & feel) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <style>
+    :root {
+      --sanbai-orange: #F76B1C;
+      --ink: #1C1C1C;
+      --ink-2: #2F2F2F;
+      --muted: #667085;
+      --bg: #F5F6F8;
+      --card: #FFFFFF;
+      --line: #E6E8EC;
+
+      --success: #16A34A;
+      --warning: #F59E0B;
+      --info: #2563EB;
+      --danger: #DC2626;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: var(--bg);
+      padding: 20px;
+      min-height: 100vh;
+      color: var(--ink);
+    }
+
+    .container { max-width: 1400px; margin: 0 auto; }
+
+    /* ===== Header ===== */
+    .header {
+      background: var(--card);
+      padding: 22px 26px;
+      border-radius: 14px;
+      border-left: 6px solid var(--sanbai-orange);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      min-width: 280px;
+    }
+
+    .brand img {
+      height: 44px;
+      width: auto;
+      display: block;
+    }
+
+    .brand h1 {
+      font-size: 1.65rem;
+      letter-spacing: 0.2px;
+      line-height: 1.15;
+    }
+
+    .brand p {
+      color: var(--muted);
+      margin-top: 4px;
+      font-size: 0.98rem;
+    }
+
+    .meta {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: flex-end;
+      flex: 1;
+      min-width: 260px;
+    }
+
+    .badges {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      border: 1px solid rgba(0,0,0,0.06);
+      background: #fff;
+      white-space: nowrap;
+    }
+
+    .badge.success { color: var(--success); border-color: rgba(22,163,74,0.25); }
+    .badge.warning { color: #B45309; border-color: rgba(245,158,11,0.35); }
+    .badge.info { color: var(--info); border-color: rgba(37,99,235,0.25); }
+    .badge.neutral { color: var(--ink-2); border-color: rgba(0,0,0,0.10); }
+
+    .submeta {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .submeta i { color: var(--sanbai-orange); margin-right: 8px; }
+
+    /* ===== Botón Export PDF (nuevo) ===== */
+    .header-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    .btn{
+      appearance: none;
+      border: 1px solid rgba(0,0,0,0.08);
+      background: #fff;
+      color: var(--ink);
+      padding: 9px 12px;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 0.9rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.06);
+      transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+      white-space: nowrap;
+    }
+
+    .btn:hover{
+      transform: translateY(-1px);
+      box-shadow: 0 12px 26px rgba(0,0,0,0.10);
+      border-color: rgba(0,0,0,0.14);
+    }
+
+    .btn-accent{
+      background: var(--ink);
+      color: #fff;
+      border-color: rgba(0,0,0,0.18);
+    }
+
+    .btn-accent i{ color: var(--sanbai-orange); }
+
+    /* ===== Cards ===== */
+    .grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .stats-grid {
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      margin-bottom: 16px;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      box-shadow: 0 8px 22px rgba(0,0,0,0.06);
+    }
+
+    .stat-card {
+      padding: 18px 18px 16px 18px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: var(--sanbai-orange);
+    }
+
+    .stat-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      background: rgba(247,107,28,0.10);
+      color: var(--sanbai-orange);
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+
+    .stat-value {
+      font-size: 1.85rem;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.10em;
+    }
+
+    /* ===== Sections ===== */
+    .section {
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .section-title h2 {
+      font-size: 1.2rem;
+      letter-spacing: 0.2px;
+    }
+
+    .section-title h2 i {
+      color: var(--sanbai-orange);
+      margin-right: 10px;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    /* ===== Scope ===== */
+    .scope-grid {
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      margin-bottom: 16px;
+    }
+
+    .scope-card {
+      padding: 18px;
+    }
+
+    .scope-card h3 {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.02rem;
+      margin-bottom: 10px;
+    }
+
+    .scope-card h3 i {
+      color: var(--sanbai-orange);
+    }
+
+    .scope-card ul {
+      list-style: none;
+    }
+
+    .scope-card li {
+      padding: 9px 0;
+      border-bottom: 1px solid var(--line);
+      color: #344054;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      font-size: 0.96rem;
+    }
+
+    .scope-card li:last-child { border-bottom: none; }
+
+    .scope-card li::before {
+      content: "\f058"; /* fa-circle-check */
+      font-family: "Font Awesome 6 Free";
+      font-weight: 900;
+      color: var(--success);
+      margin-top: 2px;
+    }
+
+    /* ===== Timeline ===== */
+    .timeline-items {
+      position: relative;
+      padding-left: 34px;
+      margin-top: 8px;
+    }
+
+    .timeline-items::before {
+      content: "";
+      position: absolute;
+      left: 14px;
+      top: 4px;
+      bottom: 4px;
+      width: 3px;
+      background: rgba(247,107,28,0.85);
+      border-radius: 3px;
+    }
+
+    .timeline-item {
+      position: relative;
+      padding-bottom: 14px;
+    }
+
+    .timeline-item:last-child { padding-bottom: 0; }
+
+    .timeline-item::before {
+      content: "";
+      position: absolute;
+      left: -27px;
+      top: 6px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #fff;
+      border: 3px solid var(--sanbai-orange);
+      box-shadow: 0 0 0 4px rgba(247,107,28,0.12);
+    }
+
+    .timeline-item.active::before { background: var(--sanbai-orange); }
+
+    .timeline-content {
+      background: #FAFAFB;
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--sanbai-orange);
+      padding: 14px 14px 12px 14px;
+      border-radius: 12px;
+    }
+
+    .timeline-title {
+      font-weight: 800;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .timeline-title i { color: var(--sanbai-orange); }
+
+    .timeline-duration {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+    }
+
+    .timeline-desc {
+      color: #344054;
+      font-size: 0.95rem;
+      line-height: 1.35;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 12px;
+      background: #EDEFF2;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 10px;
+      border: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--sanbai-orange);
+      transition: width 900ms ease;
+    }
+
+    .progress-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    /* ===== Team ===== */
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    .team-card {
+      padding: 14px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: #FAFAFB;
+    }
+
+    .team-role {
+      font-weight: 800;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .team-role i { color: var(--sanbai-orange); }
+
+    .team-name {
+      color: #344054;
+      font-size: 0.95rem;
+      line-height: 1.25;
+    }
+
+    /* ===== Risks ===== */
+    .critical {
+      border-left: 6px solid var(--danger);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .critical .critical-items {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .critical-item {
+      border: 1px solid var(--line);
+      background: #FFFBFB;
+      padding: 12px;
+      border-radius: 12px;
+    }
+
+    .critical-item strong {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+      font-size: 0.98rem;
+    }
+
+    .critical-item strong i { color: var(--danger); }
+
+    /* ===== Table ===== */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+    }
+
+    thead th {
+      background: var(--ink);
+      color: white;
+      padding: 12px;
+      text-align: left;
+      font-size: 0.92rem;
+    }
+
+    tbody td {
+      padding: 12px;
+      vertical-align: top;
+      border-top: 1px solid var(--line);
+      color: #344054;
+      font-size: 0.95rem;
+      line-height: 1.35;
+    }
+
+    tbody tr:nth-child(odd) td { background: #FAFAFB; }
+
+    /* ===== Financial Cards ===== */
+    .fin-grid {
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+
+    .fin-card {
+      padding: 16px;
+    }
+
+    .fin-title {
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-weight: 900;
+      margin-bottom: 8px;
+      color: var(--ink);
+    }
+
+    .fin-title i { color: var(--sanbai-orange); }
+
+    .fin-row {
+      display:flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+      color: #344054;
+      font-size: 0.95rem;
+    }
+
+    .fin-row:last-child { border-bottom: none; }
+
+    .fin-muted { color: var(--muted); font-size: 0.9rem; margin-top: 10px; }
+
+    .pill {
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(0,0,0,0.08);
+      background: #fff;
+      font-weight: 800;
+      font-size: 0.85rem;
+      white-space: nowrap;
+    }
+
+    .pill.ok { color: var(--success); border-color: rgba(22,163,74,0.25); }
+    .pill.warn { color: #B45309; border-color: rgba(245,158,11,0.35); }
+
+    /* ===== Footer Objective ===== */
+    .objective {
+      background: var(--ink);
+      color: white;
+      padding: 22px;
+    }
+
+    .objective h2 {
+      font-size: 1.25rem;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .objective h2 i { color: var(--sanbai-orange); }
+
+    .objective p {
+      color: rgba(255,255,255,0.92);
+      line-height: 1.5;
+      font-size: 1.02rem;
+    }
+
+    @media (max-width: 768px) {
+      body { padding: 14px; }
+      .meta { align-items: flex-start; }
+      .badges { justify-content: flex-start; }
+      .brand h1 { font-size: 1.35rem; }
+      .header-actions{ justify-content: flex-start; }
+    }
+
+    /* ===== Print / PDF ===== */
+    @media print{
+      body{ background: #fff; padding: 0; }
+      .header, .card{ box-shadow: none !important; }
+      .header-actions{ display:none !important; }
+    }
+    /* =========================
+   PDF MODE – INFO PROYECTO
+========================= */
+body.pdf-mode {
+  background: white;
+}
+
+body.pdf-mode .btn,
+body.pdf-mode .project-selector,
+body.pdf-mode #connStatus {
+  display: none !important;
+}
+
+body.pdf-mode .container {
+  max-width: none;
+  padding: 0;
+}
+
+body.pdf-mode .card,
+body.pdf-mode section,
+body.pdf-mode .block {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+@page {
+  size: A4 portrait; /* este suele quedar mejor para info proyecto */
+  margin: 12mm;
+}
+
+@media print {
+  html, body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+  </style>
+</head>
+
+<body>
+  <div class="container" id="pdfRoot">
+
+    <div class="header card">
+      <div class="header-top">
+        <div class="brand">
+          <img src="logo.png" alt="Sanbai">
+          <div>
+            <h1>Proyecto Torre Macro</h1>
+            <p>Actualización tecnológica – Infraestructura de red cableada Huawei</p>
+          </div>
+        </div>
+
+        <div class="meta">
+          <div class="header-actions">
+            <button
+  class="btn btn-white"
+  onclick="window.location.href='pm-dashboard-sanbai-corporate-airtable-fixed.html'">
+  <i class="fa-solid fa-arrow-left"></i> Volver al PM Dashboard
+</button>
+            <button class="btn btn-white" onclick="exportPDF()">
+  <i class="fa-solid fa-file-pdf"></i> Exportar PDF
+</button>
+          </div>
+
+          <div class="badges">
+            <span class="badge success"><i class="fa-solid fa-circle-check"></i> En ejecución</span>
+            <span class="badge neutral"><i class="fa-solid fa-calendar"></i> Vigencia: 36 meses</span>
+            <span class="badge info"><i class="fa-solid fa-calendar-days"></i> 01/03/2026 – 01/03/2029</span>
+            <span class="badge warning"><i class="fa-solid fa-dollar-sign"></i> USD 1.190.682,80</span>
+          </div>
+          <div class="submeta"><i class="fa-solid fa-clock-rotate-left"></i>Última actualización: <strong id="lastUpdated">--/--/----</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI / Snapshot -->
+    <div class="grid stats-grid">
+      <div class="card stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-network-wired"></i></div>
+        <div class="stat-value">170</div>
+        <div class="stat-label">Switches (alcance)</div>
+      </div>
+
+      <div class="card stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-clock"></i></div>
+        <div class="stat-value">~4</div>
+        <div class="stat-label">Meses estimados (alto nivel)</div>
+      </div>
+
+      <div class="card stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-recycle"></i></div>
+        <div class="stat-value">300</div>
+        <div class="stat-label">Equipos a scrap (RAEE)</div>
+      </div>
+
+      <div class="card stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-user-gear"></i></div>
+        <div class="stat-value">100h</div>
+        <div class="stat-label">Consultoría anual</div>
+      </div>
+
+      <div class="card stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-chalkboard-user"></i></div>
+        <div class="stat-value">2</div>
+        <div class="stat-label">Tandas de capacitación</div>
+      </div>
+
+      <div class="card stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-shield-halved"></i></div>
+        <div class="stat-value">24/7</div>
+        <div class="stat-label">Soporte premium</div>
+      </div>
+    </div>
+
+    <!-- Órdenes de compra comprometidas -->
+    <div class="card section">
+      <div class="section-title">
+        <h2><i class="fa-solid fa-file-invoice-dollar"></i>Órdenes de compra comprometidas (OC)</h2>
+        <div class="hint">Montos sin IVA • Base para seguimiento financiero y entregables</div>
+      </div>
+
+      <div class="grid fin-grid">
+        <div class="card fin-card">
+          <div class="fin-title"><i class="fa-solid fa-boxes-stacked"></i> OC 00010 – Equipamiento LAN</div>
+          <div class="fin-row"><span>Proveedor</span><strong>Intermaco (Huawei)</strong></div>
+          <div class="fin-row"><span>Monto total</span><strong>USD 667,014.73</strong></div>
+          <div class="fin-row"><span>Pago</span><strong>30 días FF</strong></div>
+          <div class="fin-muted">
+            <span class="pill ok"><i class="fa-solid fa-circle-check"></i> Comprometida</span>
+          </div>
+        </div>
+
+        <div class="card fin-card">
+          <div class="fin-title"><i class="fa-solid fa-screwdriver-wrench"></i> OC 00012 – Implementation Services</div>
+          <div class="fin-row"><span>Proveedor</span><strong>Intermaco</strong></div>
+          <div class="fin-row"><span>Monto total</span><strong>USD 76,755.61</strong></div>
+          <div class="fin-row"><span>Pago</span><strong>30 días FF</strong></div>
+          <div class="fin-muted">
+            <span class="pill ok"><i class="fa-solid fa-circle-check"></i> Comprometida</span>
+          </div>
+        </div>
+
+        <div class="card fin-card">
+          <div class="fin-title"><i class="fa-solid fa-headset"></i> QLX – Implementación & Soporte</div>
+          <div class="fin-row"><span>Implementación + PMO + Skill Transfer</span><strong>USD 73,250.00</strong></div>
+          <div class="fin-row"><span>Soporte reactivo (12 meses)</span><strong>USD 50,400.00</strong></div>
+          <div class="fin-row"><span>Soporte reactivo (36 meses)</span><strong>USD 151,200.00</strong></div>
+          <div class="fin-muted">
+            <span class="pill warn"><i class="fa-solid fa-triangle-exclamation"></i> A confirmar modalidad de contratación</span>
+          </div>
+        </div>
+
+        <div class="card fin-card">
+          <div class="fin-title"><i class="fa-solid fa-calculator"></i> Totales rápidos</div>
+          <div class="fin-row"><span>Total OCs (Intermaco)</span><strong id="totalIntermaco">USD --</strong></div>
+          <div class="fin-row"><span>Proyecto (propuesta base)</span><strong>USD 1,190,682.80</strong></div>
+          <div class="fin-muted">
+            <span class="pill ok"><i class="fa-solid fa-chart-line"></i> Útil para comité</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alcance -->
+    <div class="grid scope-grid">
+      <div class="card scope-card">
+        <h3><i class="fa-solid fa-building"></i> Red Campus LAN</h3>
+        <ul>
+          <li>Switches de acceso + agregación (alcance total: 170 switches)</li>
+          <li>Core Campus (CloudEngine)</li>
+          <li>Soporte PoE++ y mGig</li>
+          <li>Uplinks 25G redundantes</li>
+          <li>Preparado para WiFi 7</li>
+        </ul>
+      </div>
+
+      <div class="card scope-card">
+        <h3><i class="fa-solid fa-server"></i> Datacenter Local</h3>
+        <ul>
+          <li>Core DC + ToR (CloudEngine)</li>
+          <li>Stack extendido entre DCs</li>
+          <li>Uplinks 100G</li>
+          <li>Segmentación y resiliencia</li>
+          <li>Ventanas controladas</li>
+        </ul>
+      </div>
+
+      <div class="card scope-card">
+        <h3><i class="fa-solid fa-shield"></i> DMZ Datacenters</h3>
+        <ul>
+          <li>Switching DMZ (incl. core)</li>
+          <li>Optimización de tráfico</li>
+          <li>Extensión DCs principales</li>
+          <li>Hardening operativo</li>
+          <li>Validación post-migración</li>
+        </ul>
+      </div>
+
+      <div class="card scope-card">
+        <h3><i class="fa-solid fa-diagram-project"></i> Management OOB</h3>
+        <ul>
+          <li>Red de gestión aislada</li>
+          <li>Enlaces redundantes 10G/1G</li>
+          <li>Operación segura</li>
+          <li>Monitoreo & troubleshooting</li>
+          <li>Documentación final</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Cronograma -->
+    <div class="card section">
+      <div class="section-title">
+        <h2><i class="fa-solid fa-calendar-check"></i>Cronograma del proyecto</h2>
+        <div class="hint">Vista interna (alto nivel) • Ajustable por sitio y ventanas</div>
+      </div>
+
+      <div class="timeline-items">
+        <div class="timeline-item active">
+          <div class="timeline-content">
+            <div class="timeline-title"><i class="fa-solid fa-plane-arrival"></i>Importación de hardware</div>
+            <div class="timeline-duration">60 días (30 fab. + 30 logística)</div>
+            <div class="timeline-desc">Fabricación en Huawei + transporte + trámites de importación</div>
+
+            <div class="progress-bar" aria-label="Progreso importación">
+              <div class="progress-fill" data-target="80"></div>
+            </div>
+            <div class="progress-meta">
+              <span>Estado: en curso</span>
+              <span><strong>80%</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-content">
+            <div class="timeline-title"><i class="fa-solid fa-magnifying-glass"></i>Relevamiento</div>
+            <div class="timeline-duration">2 semanas</div>
+            <div class="timeline-desc">Inspección física, dependencias y preparación por sitio</div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-content">
+            <div class="timeline-title"><i class="fa-solid fa-pen-ruler"></i>Diseño (HLD / LLD / NIP)</div>
+            <div class="timeline-duration">6 semanas</div>
+            <div class="timeline-desc">Topologías, plan de implementación y rollback</div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-content">
+            <div class="timeline-title"><i class="fa-solid fa-screwdriver-wrench"></i>Implementación</div>
+            <div class="timeline-duration">20 semanas (~6 meses)</div>
+            <div class="timeline-desc">
+              <strong>Secuencia:</strong><br>
+              1) Cores (Campus + DC) – prioridad crítica<br>
+              2) Datacenter + DMZ<br>
+              3) LAN Torre (switches de acceso)
+            </div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-content">
+            <div class="timeline-title"><i class="fa-solid fa-clipboard-check"></i>Validación y cierre</div>
+            <div class="timeline-duration">4 semanas</div>
+            <div class="timeline-desc">Pruebas, documentación final y acta de aceptación</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Equipo -->
+    <div class="card section">
+      <div class="section-title">
+        <h2><i class="fa-solid fa-people-group"></i>Equipo del proyecto</h2>
+        <div class="hint">Contactos operativos y responsables por deliverable</div>
+      </div>
+
+      <div class="team-grid">
+        <div class="team-card">
+          <div class="team-role"><i class="fa-solid fa-bullseye"></i> PM principal</div>
+          <div class="team-name">Sebastián Pittaluga<br>(contacto primario)</div>
+        </div>
+
+        <div class="team-card">
+          <div class="team-role"><i class="fa-solid fa-handshake"></i> Soporte PM</div>
+          <div class="team-name">Luis + Sebastián Borghello</div>
+        </div>
+
+        <div class="team-card">
+          <div class="team-role"><i class="fa-solid fa-file-lines"></i> LLD & MOP</div>
+          <div class="team-name">Huawei Argentina</div>
+        </div>
+
+        <div class="team-card">
+          <div class="team-role"><i class="fa-solid fa-toolbox"></i> Instalación física</div>
+          <div class="team-name">Qualix</div>
+        </div>
+
+        <div class="team-card">
+          <div class="team-role"><i class="fa-solid fa-landmark"></i> Cliente</div>
+          <div class="team-name">M. Homziak | A. Abarca<br>D. Salvo</div>
+        </div>
+
+        <div class="team-card">
+          <div class="team-role"><i class="fa-solid fa-briefcase"></i> Sponsor / Dirección</div>
+          <div class="team-name">Daniel Burban</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Riesgos -->
+    <div class="card critical">
+      <div class="section-title">
+        <h2><i class="fa-solid fa-triangle-exclamation"></i>Riesgos y dependencias críticas</h2>
+        <div class="hint">Acción inmediata / desbloqueos</div>
+      </div>
+
+      <div class="critical-items">
+        <div class="critical-item">
+          <strong><i class="fa-solid fa-bolt"></i> Instalación Core</strong>
+          Validar condiciones para instalación inmediata del Core Huawei (espacio, energía, accesos).
+        </div>
+
+        <div class="critical-item">
+          <strong><i class="fa-solid fa-boxes-stacked"></i> Recepción de equipamiento</strong>
+          Confirmar logística en depósito Sanbai.
+        </div>
+
+        <div class="critical-item">
+          <strong><i class="fa-solid fa-lock"></i> Configuraciones ISE</strong>
+          Definir quién tomará las configuraciones en Cisco ISE.
+        </div>
+
+        <div class="critical-item">
+          <strong><i class="fa-solid fa-money-check-dollar"></i> Hitos de pago</strong>
+          Alinear condiciones entre Huawei, Qualix y Sanbai.
+        </div>
+
+        <div class="critical-item">
+          <strong><i class="fa-solid fa-microchip"></i> Provisión de VMs</strong>
+          Banco debe proveer 7 VMs con specs definidos.
+        </div>
+
+        <div class="critical-item">
+          <strong><i class="fa-solid fa-warehouse"></i> Espacio de scrap</strong>
+          Depósito en Torre para almacenar equipos obsoletos (RAEE).
+        </div>
+      </div>
+    </div>
+
+    <!-- Matriz de responsabilidades -->
+    <div class="card section">
+      <div class="section-title">
+        <h2><i class="fa-solid fa-table"></i>Matriz de responsabilidades</h2>
+        <div class="hint">Qué entrega cada parte (alcance operativo)</div>
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 220px;">Responsable</th>
+              <th>Alcance</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Huawei</strong></td>
+              <td>
+                ✅ LLD y MOP<br>
+                ✅ iMaster Campus (VM + startup)<br>
+                ✅ Config. Core LAN + Core DC + ToR<br>
+                ❌ Switches DMZ (según definición operativa)<br>
+                ❌ Switches de acceso Torre (según definición operativa)
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Qualix</strong></td>
+              <td>
+                ✅ Relevamiento físico Torre<br>
+                ✅ Instalación física de todo el equipamiento
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Sanbai</strong></td>
+              <td>
+                ✅ Project Management<br>
+                ✅ Mesa de Ayuda 7x24<br>
+                ✅ Servicio Scrap (RAEE)<br>
+                ✅ Config. switches DMZ y acceso
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Banco Macro</strong></td>
+              <td>
+                ✅ Acceso físico/remoto<br>
+                ✅ Direccionamiento IP, VLANs<br>
+                ✅ Provisión 7 VMs<br>
+                ✅ Configuraciones ISE<br>
+                ✅ Aprobar entregables (HLD/LLD/NIP)
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Objetivo -->
+    <div class="card objective">
+      <h2><i class="fa-solid fa-flag"></i>Objetivo principal</h2>
+      <p>
+        Modernizar completamente la infraestructura de red de Torre Madero con tecnología Huawei CloudEngine,
+        optimizando disponibilidad, capacidad y seguridad, garantizando continuidad operativa durante toda la migración.
+      </p>
+    </div>
+
+  </div>
+
+  <script>
+    // === Helpers ===
+    function formatARSDate(d) {
+      const dd = String(d.getDate()).padStart(2,'0');
+      const mm = String(d.getMonth()+1).padStart(2,'0');
+      const yyyy = d.getFullYear();
+      return `${dd}/${mm}/${yyyy}`;
+    }
+
+    function formatUSD(n) {
+      return "USD " + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // === Última actualización automática ===
+    (function setAutoLastUpdated() {
+      const el = document.getElementById('lastUpdated');
+      if (!el) return;
+      el.textContent = formatARSDate(new Date());
+    })();
+
+    // === Animación barras + totales ===
+    window.addEventListener('load', () => {
+      document.querySelectorAll('.progress-fill').forEach(el => {
+        const target = el.getAttribute('data-target') || '0';
+        requestAnimationFrame(() => { el.style.width = target + '%'; });
+      });
+
+      const oc10 = 667014.73;
+      const oc12 = 76755.61;
+      const total = oc10 + oc12;
+      const totalEl = document.getElementById("totalIntermaco");
+      if (totalEl) totalEl.textContent = formatUSD(total);
+    });
+
+    // === Export PDF (nuevo) ===
+    async function exportPDF(){
+      const root = document.getElementById('pdfRoot');
+      if (!root) return alert("No se encontró el contenedor para exportar.");
+
+      const opt = {
+        margin:       [10, 10, 10, 10],     // mm
+        filename:     `Proyecto_Torre_Macro_${new Date().toISOString().slice(0,10)}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak:    { mode: ['css','legacy'] }
+      };
+
+      try{
+        await html2pdf().set(opt).from(root).save();
+      }catch(e){
+        console.error(e);
+        alert("No se pudo exportar el PDF. Revisá consola.");
+      }
+    }
+
+function exportPDF() {
+  // Activar modo PDF
+  document.body.classList.add("pdf-mode");
+
+  // Esperar a que el browser recalcule layout
+  setTimeout(() => {
+    window.print();
+
+    // Volver a modo normal
+    setTimeout(() => {
+      document.body.classList.remove("pdf-mode");
+    }, 500);
+  }, 300);
+}
+
+  </script>
+</body>
+</html>
+
+
