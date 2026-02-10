@@ -289,6 +289,56 @@
       .container{ max-width:none; }
       .card, .hero{ box-shadow:none; }
     }
+
+    @media print {
+
+  /* Forzar ancho completo real */
+  .container {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  /* Evitar cortes raros */
+  section, .card, .hero {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Tablas: que no se corten */
+  table {
+    width: 100% !important;
+    table-layout: fixed; /* CLAVE */
+    page-break-inside: auto;
+  }
+
+  thead {
+    display: table-header-group; /* repite headers */
+  }
+
+  tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  th, td {
+    white-space: nowrap;   /* evita “TOTAL (U” */
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  /* Columnas numéricas */
+  .num {
+    text-align: right;
+    min-width: 110px;
+  }
+
+  /* Margen de página real */
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+}
+
   </style>
 </head>
 <body>
@@ -369,7 +419,7 @@
           <div class="scenario">
             <h3 class="section-subtitle">Breakdown económico (Escenario 1)</h3>
             <div class="table-wrap">
-              <table class="tbl">
+            <table class="table">
                 <thead>
                   <tr>
                     <th>#</th><th>Ítem</th><th class="num">Cant.</th><th class="num">Total (USD)</th>
@@ -390,7 +440,7 @@
 
             <h3 class="section-subtitle" style="margin-top:18px;">Breakdown económico (Escenario 2 – Sucursales)</h3>
             <div class="table-wrap">
-              <table class="tbl">
+          <table class="table">
                 <thead>
                   <tr>
                     <th>Componente</th><th class="num">Cant.</th><th class="num">Total (USD)</th>
