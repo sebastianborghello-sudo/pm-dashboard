@@ -226,6 +226,97 @@ exports.handler = async (event) => {
     if (event.httpMethod === "POST" && subpath === "cashflow") {
       const payload = JSON.parse(event.body || "{}");
       const { projectKey } = payload;
+      // ==========================
+// POST /tasks  (crear task)
+// Body:
+// { projectKey, name, description, owner, status, progress, startDate, endDate }
+// ==========================
+if (event.httpMethod === "POST" && subpath === "tasks") {
+  const payload = JSON.parse(event.body || "{}");
+  const { projectKey } = payload;
+
+  // ==========================
+// PATCH /tasks/:recordId  (update task)
+// ==========================
+if (event.httpMethod === "PATCH" && subpath.startsWith("tasks/")) {
+  const recordId = subpath.split("/")[1];
+  if (!recordId) {
+    return {
+      statusCode: 400,
+      headers: { "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*" },
+      body: JSON.stringify({ ok: false, error: "Missing recordId" }),
+    };
+  }
+
+  const payload = JSON.parse(event.body || "{}");
+  const fields = {};
+
+  if (payload.name !== undefined) fields["Name"] = payload.name || "";
+  if (payload.description !== undefined) fields["Description"] = payload.description || "";
+  if (payload.owner !== undefined) fields["Owner"] = payload.owner || "";
+  if (payload.status !== undefined) fields["Status"] = payload.status || "pending";
+  if (payload.progress !== undefined) fields["Progress"] = Number(payload.progress ?? 0);
+  if (payload.startDate !== undefined) fields["Start Date"] = payload.startDate || null;
+  if (payload.endDate !== undefined) fields["End Date"] = payload.endDate || null;
+
+  // opcional: permitir cambiar de proyecto
+  if (payload.projectKey) {
+    const { projectKeyToId } = await buildProjectMaps();
+    const projectRecordId = projectKeyToId[payload.projectKey];
+    if (!projectRecordId) throw new Error(`Unknown projectKey: ${payload.projectKey}`);
+    fields["Project"] = [projectRecordId];
+  }
+
+  const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(TABLE_TASKS)}/${recordId}`;
+  const updated = await airtableReq("PATCH", url, { fields });
+
+  return {
+    statusCode: 200,
+    headers: { "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*" },
+    body: JSON.stringify({ ok: true, record: updated }),
+  };
+}
+
+
+  if (!projectKey) {
+    return {
+      statusCode: 400,
+      headers: { "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*" },
+      body: JSON.stringify({ ok: false, error: "Missing projectKey" }),
+    };
+  }
+
+  const { projectKeyToId } = await buildProjectMaps();
+  const projectRecordId = projectKeyToId[projectKey];
+  if (!projectRecordId) {
+    return {
+      statusCode: 400,
+      headers: { "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*" },
+      body: JSON.stringify({ ok: false, error: `Unknown projectKey: ${projectKey}` }),
+    };
+  }
+
+  const fields = {
+    "Project": [projectRecordId],
+    "Name": payload.name || "",
+    "Description": payload.description || "",
+    "Owner": payload.owner || "",
+    "Status": payload.status || "pending",
+    "Progress": Number(payload.progress ?? 0),
+    ...(payload.startDate ? { "Start Date": payload.startDate } : {}),
+    ...(payload.endDate ? { "End Date": payload.endDate } : {}),
+  };
+
+  const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(TABLE_TASKS)}`;
+  const created = await airtableReq("POST", url, { fields });
+
+  return {
+    statusCode: 200,
+    headers: { "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*" },
+    body: JSON.stringify({ ok: true, record: created }),
+  };
+}
+
 
       if (!projectKey) {
         return {
