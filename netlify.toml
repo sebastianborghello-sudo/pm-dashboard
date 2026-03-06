@@ -2,20 +2,20 @@
   publish = "."
   functions = "netlify/functions"
 
-# 1. Asegurar acceso a scripts y funciones (Vital para evitar el loop)
+# 1. PERMITIR ASSETS Y FUNCIONES (Vital para evitar el loop)
 [[redirects]]
   from = "/.netlify/*"
   to = "/.netlify/:splat"
   status = 200
 
-# 2. Redirección de la raíz al Viewer Global
+# 2. REDIRECCIÓN DE RAÍZ
 [[redirects]]
   from = "/"
   to = "/enterprise-viewer.html"
   status = 200
   force = true
 
-# 3. Reglas de acceso por Rol (Sin redirecciones 302 aquí)
+# 3. REGLAS DE ACCESO POR ROL (Sin force=true para evitar rebotes falsos)
 [[redirects]]
   from = "/enterprise-viewer.html"
   to = "/enterprise-viewer.html"
@@ -28,8 +28,8 @@
   status = 200
   conditions = {Role = ["pm_admin", "pm_editor", "pm_viewer"]}
 
-# 4. Fallback final: Si después de todo no tiene acceso, al login.
-# IMPORTANTE: force = false permite que si el archivo existe y el usuario tiene acceso, se muestre.
+# 4. FALLBACK: Si no tiene el rol anterior, mandarlo al login
+# Usamos force = false para que no atrape peticiones de scripts internos
 [[redirects]]
   from = "/*"
   to = "/login.html"
