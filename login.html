@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Login | Sanbai PM</title>
+  <script defer src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; background:#f5f6f8; display:grid; place-items:center; min-height:100vh; }
+    .card { background:#fff; padding:32px; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.08); width:min(420px,90vw); text-align:center; }
+    button { background:#1c1c1c; color:#fff; border:none; padding:12px 18px; border-radius:10px; cursor:pointer; font-weight:700; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Sanbai PM</h1>
+    <p>Acceso restringido. Iniciá sesión para continuar.</p>
+    <button id="btnLogin">Iniciar sesión</button>
+  </div>
+
+  <script>
+    const btn = document.getElementById("btnLogin");
+    btn.addEventListener("click", () => {
+      window.netlifyIdentity.open();
+    });
+
+    window.netlifyIdentity.on("login", () => {
+      window.netlifyIdentity.close();
+      window.location.href = "/pm-dashboard-sanbai-corporate-airtable-fixed";
+    });
+  </script>
+</body>
+</html>
