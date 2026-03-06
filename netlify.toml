@@ -2,40 +2,68 @@
   publish = "."
   functions = "netlify/functions"
 
-# netlify.toml
+# =========================================================
+# 1. REDIRECCIONES DE SEGURIDAD (QUIÉN PUEDE VER QUÉ)
+# =========================================================
 
-
-
-
-# Redirección de URLs viejas a la nueva lógica dinámica
+# El Dashboard Operativo (Airtable) solo para Staff con roles específicos
 [[redirects]]
-  from = "/proyecto/macro"
-  to = "/project-viewer.html?key=macro_lan"
-  status = 200
-
-[[redirects]]
-  from = "/proyecto/sdwan"
-  to = "/project-viewer.html?key=sdwan_nubes"
-  status = 200
-
-[[redirects]]
-  from = "/proyecto/storage"
-  to = "/project-viewer.html?key=storage_backup"
-  status = 200
-
-# Protección para la función de datos
-[[redirects]]
-  from = "/.netlify/functions/presentation-data"
-  to = "/.netlify/functions/presentation-data"
+  from = "/pm-dashboard-sanbai-corporate-airtable-fixed"
+  to = "/pm-dashboard-sanbai-corporate-airtable-fixed.html"
   status = 200
   force = true
+  conditions = {Role = ["pm_admin", "pm_editor"]}
 
+# La Torre de Control Enterprise (Global)
+[[redirects]]
+  from = "/"
+  to = "/enterprise-viewer.html"
+  status = 200
+  force = true
+  conditions = {Role = ["pm_admin", "pm_viewer"]}
 
-# Headers extra
+# El Viewer de Proyectos Individuales
+[[redirects]]
+  from = "/project-viewer"
+  to = "/project-viewer.html"
+  status = 200
+  force = true
+  conditions = {Role = ["pm_admin", "pm_editor", "pm_viewer"]}
+
+# =========================================================
+# 2. MIGRACIÓN DE URLs VIEJAS (PARA NO ROMPER LINKS)
+# =========================================================
+
+[[redirects]]
+  from = "/proyecto-macro-dashboard-sanbai.html"
+  to = "/project-viewer.html?key=macro_lan"
+  status = 301
+
+[[redirects]]
+  from = "/proyecto-sdwan-dashboard-sanbai.html"
+  to = "/project-viewer.html?key=sdwan_nubes"
+  status = 301
+
+[[redirects]]
+  from = "/proyecto-storage-backup-dashboard-sanbai.html"
+  to = "/project-viewer.html?key=storage_backup"
+  status = 301
+
+# =========================================================
+# 3. PROTECCIÓN DE FUNCIONES Y FALLBACK AL LOGIN
+# =========================================================
+
+# Forzar login si no hay sesión activa
+[[redirects]]
+  from = "/*"
+  to = "/login.html"
+  status = 302
+  force = false
+
+# Headers de Seguridad
 [[headers]]
   for = "/*"
   [headers.values]
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
