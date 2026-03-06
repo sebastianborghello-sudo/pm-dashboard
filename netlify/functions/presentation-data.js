@@ -1,49 +1,30 @@
-// netlify/functions/presentation-data.js
-const { buildProjectMaps, airtableReq, baseApi, TABLE_PROJECTS } = require("./airtable"); // Reutilizamos lógica de airtable.js
+const { airtableReq, baseApi, TABLE_PROJECTS } = require("./airtable");
 
 exports.handler = async (event, context) => {
   const user = context?.clientContext?.user || null;
-  const roles = user?.app_metadata?.roles || [];
-  
-  // 1. Validación de Autenticación
-  if (!user) {
-    return { statusCode: 401, body: JSON.stringify({ error: "No autorizado" }) };
-  }
+  if (!user) return { statusCode: 401, body: JSON.stringify({ error: "No Auth" }) };
 
   const { type, key } = event.queryStringParameters;
 
-  // 2. Lógica de permisos por tipo de contenido
-  if (type === 'enterprise') {
-    if (!roles.some(r => ["pm_admin", "pm_viewer"].includes(r))) {
-      return { statusCode: 403, body: JSON.stringify({ error: "Permisos insuficientes para Enterprise" }) };
-    }
-    // Aquí retornarías los datos que antes estaban "hardcodeados" en dashboard-enterprise.html
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ 
-        title: "Sanbai · Executive Update",
-        metrics: { progress: 65, totalBudget: "1.2M" },
-        // ... otros datos del dashboard
-      })
-    };
-  }
-
+  // Si es proyecto, buscamos el record específico en Airtable
   if (type === 'project' && key) {
-    if (!roles.some(r => ["pm_admin", "pm_editor", "pm_viewer"].includes(r))) {
-      return { statusCode: 403, body: JSON.stringify({ error: "Permisos insuficientes para Proyectos" }) };
+    try {
+      // Nota: Asumo que tienes una forma de buscar por el campo 'Project Key' en Airtable
+      const formula = `ENCODE_URL_COMPONENT({Project Key} = '${key}')`;
+      const response = await airtableReq("GET", `${baseApi(TABLE_PROJECTS)}?filterByFormula=${formula}`);
+      
+      if (response.records.length === 0) return { statusCode: 404, body: JSON.stringify({ error: "No encontrado" }) };
+      
+      const projectData = response.records[0].fields;
+      return {
+        statusCode: 200,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(projectData)
+      };
+    } catch (e) {
+      return { statusCode: 500, body: JSON.stringify({ error: "Error al consultar Airtable" }) };
     }
-    
-    // Simulación de búsqueda de datos por 'key' (macro_lan, storage_backup, etc.)
-    // Podrías consultar Airtable usando el key para obtener los datos específicos
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        projectKey: key,
-        name: key === 'macro_lan' ? "Renovación LAN Torre Macro" : "Proyecto " + key,
-        // ... datos específicos del proyecto
-      })
-    };
   }
 
-  return { statusCode: 400, body: JSON.stringify({ error: "Tipo de solicitud inválido" }) };
+  return { statusCode: 400, body: JSON.stringify({ error: "Tipo inválido" }) };
 };
