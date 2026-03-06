@@ -20,7 +20,7 @@
   to = "/enterprise-viewer.html"
   status = 200
   force = true
-  conditions = {Role = ["pm_admin", "pm_viewer"]}
+  #conditions = {Role = ["pm_admin", "pm_viewer"]}
 
 # El Viewer de Proyectos Individuales
 [[redirects]]
