@@ -19,42 +19,41 @@
   </div>
 
 <script>
-  // Función para inicializar los eventos una vez que Netlify Identity esté listo
-  function initIdentity() {
-    const btn = document.getElementById("btnLogin");
-    
-    btn.addEventListener("click", () => {
-      window.netlifyIdentity.open();
-    });
-
-    // Evento Init: Si ya está logueado, lo mandamos directo al dashboard
-    window.netlifyIdentity.on("init", user => {
-      if (user) {
-        window.location.href = "/enterprise-viewer.html";
-      }
-    });
-
-    // Evento Login: Al loguearse con éxito
-    window.netlifyIdentity.on("login", (user) => {
-      window.netlifyIdentity.close();
-      
-      // Verificación de seguridad de Roles
-      const roles = user?.app_metadata?.roles || [];
-      if (roles.length === 0) {
-        alert("Aviso: Tu usuario no tiene roles asignados. Contactá al administrador en Netlify.");
-      }
-      
+  // Función para redirigir según el estado del usuario
+  function handleAuth(user) {
+    if (user) {
+      console.log("Usuario detectado:", user.email);
+      // Forzamos la redirección al dashboard global
       window.location.href = "/enterprise-viewer.html";
+    }
+  }
+
+  // Inicializar Netlify Identity
+  function init() {
+    // 1. Si el usuario ya inició sesión previamente
+    const currentUser = window.netlifyIdentity.currentUser();
+    if (currentUser) {
+      handleAuth(currentUser);
+    }
+
+    // 2. Evento de login exitoso
+    window.netlifyIdentity.on("login", user => {
+      window.netlifyIdentity.close();
+      handleAuth(user);
+    });
+
+    // 3. Configurar el botón
+    document.getElementById("btnLogin").addEventListener("click", () => {
+      window.netlifyIdentity.open();
     });
   }
 
-  // Verificamos si la librería ya cargó, si no, esperamos un poco
+  // Esperar a que la librería cargue correctamente
   if (window.netlifyIdentity) {
-    initIdentity();
+    init();
   } else {
     document.addEventListener('DOMContentLoaded', () => {
-      // Un pequeño retraso para asegurar que el script 'defer' se ejecutó
-      setTimeout(initIdentity, 500);
+      setTimeout(init, 500);
     });
   }
 </script>
