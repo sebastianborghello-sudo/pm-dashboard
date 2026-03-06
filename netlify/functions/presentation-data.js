@@ -31,3 +31,24 @@ exports.handler = async (event, context) => {
   
   return { statusCode: 400, body: "Petición inválida" };
 };
+// Actualización en netlify/functions/presentation-data.js
+if (type === 'project' && key) {
+    const filter = `SEARCH("${key}", {Project Key})`;
+    const url = `${baseApi('Projects')}?filterByFormula=${encodeURIComponent(filter)}`;
+    const response = await airtableReq("GET", url);
+    const project = response.records[0];
+
+    if (!project) return { statusCode: 404, body: "No existe el proyecto" };
+
+    // Parseamos el JSON que guardaste en Airtable
+    const executiveData = JSON.parse(project.fields["Executive_Data"] || "{}");
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({
+        name: project.fields["Name"],
+        subtitle: project.fields["Subtitle"],
+        ...executiveData // Esto inyecta el objective, kpis y scope automáticamente
+      })
+    };
+}
