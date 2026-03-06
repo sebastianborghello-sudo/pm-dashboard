@@ -1,4 +1,5 @@
-const { airtableReq, baseApi } = require("./airtable");
+// netlify/functions/presentation-data.js
+const airtableModule = require("./airtable"); 
 
 exports.handler = async (event, context) => {
   const user = context?.clientContext?.user;
@@ -6,64 +7,57 @@ exports.handler = async (event, context) => {
 
   const { type, key } = event.queryStringParameters;
 
-  // Dentro de exports.handler en netlify/functions/presentation-data.js
+  try {
+    // LÓGICA PARA PROYECTOS INDIVIDUALES
+    if (type === 'project' && key) {
+      // Usamos las funciones exportadas de airtable.js
+      const filter = `SEARCH("${key}", {Project Key})`;
+      // Nota: Asegúrate que baseApi y airtableReq estén disponibles
+      const url = `${airtableModule.baseApi('Projects')}?filterByFormula=${encodeURIComponent(filter)}`;
+      const response = await airtableModule.airtableReq("GET", url);
+      
+      const record = response.records[0];
+      if (!record) return { statusCode: 404, body: JSON.stringify({ error: "Proyecto no encontrado" }) };
 
-if (type === 'enterprise') {
-    // Traemos todos los proyectos para el dashboard global
-    const url = `${baseApi('Projects')}?sort%5B0%5D%5Bfield%5D=Name`;
-    const response = await airtableReq("GET", url);
-    
-    const projects = response.records.map(r => ({
-      name: r.fields["Name"],
-      key: r.fields["Project Key"],
-      subtitle: r.fields["Subtitle"]
-    }));
+      // Parseamos el JSON del campo que creaste en Airtable
+      const executiveData = JSON.parse(record.fields["Executive_Data"] || "{}");
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        stats: {
-          total: projects.length,
-          margin: 24.2 // Esto podrías calcularlo dinámicamente si tienes el dato en Airtable
-        },
-        projects: projects
-      })
-    };
-}
+      return {
+        statusCode: 200,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: record.fields["Name"],
+          subtitle: record.fields["Subtitle"],
+          ...executiveData
+        })
+      };
+    }
 
-  // LÓGICA PARA PROYECTOS
-  if (type === 'project' && key) {
-    const filter = `SEARCH("${key}", {Project Key})`;
-    const url = `${baseApi('Projects')}?filterByFormula=${encodeURIComponent(filter)}`;
-    const response = await airtableReq("GET", url);
-    const record = response.records[0];
+    // LÓGICA PARA ENTERPRISE (GLOBAL)
+    if (type === 'enterprise') {
+      const url = `${airtableModule.baseApi('Projects')}?sort%5B0%5D%5Bfield%5D=Name`;
+      const response = await airtableModule.airtableReq("GET", url);
+      
+      const projects = response.records.map(r => ({
+        name: r.fields["Name"],
+        key: r.fields["Project Key"],
+        subtitle: r.fields["Subtitle"]
+      }));
 
-    if (!record) return { statusCode: 404, body: "No encontrado" };
-
-    // Extraemos el JSON del campo que creaste
-    const executiveData = JSON.parse(record.fields["Executive_Data"] || "{}");
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        name: record.fields["Name"],
-        subtitle: record.fields["Subtitle"],
-        ...executiveData
-      })
-    };
-  }
-
-  // LÓGICA PARA ENTERPRISE (Global)
-  if (type === 'enterprise') {
-    // Aquí puedes traer el resumen de la nueva tabla Enterprise_Config
-    // O simplemente devolver un resumen de todos los proyectos
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        title: "UDN Enterprise - Control Tower",
-        active_projects: 3,
-        total_margin: "24.2%"
-      })
+      return {
+        statusCode: 200,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          stats: { total: projects.length, margin: 24.2 },
+          projects: projects
+        })
+      };
+    }
+  } catch (error) {
+    console.error("Error en la función:", error);
+    return { 
+      statusCode: 500, 
+      body: JSON.stringify({ error: error.message }) 
     };
   }
 };
