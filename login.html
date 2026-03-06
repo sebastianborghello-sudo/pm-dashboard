@@ -24,10 +24,11 @@
       window.netlifyIdentity.open();
     });
 
-    window.netlifyIdentity.on("login", () => {
-      window.netlifyIdentity.close();
-      window.location.href = "/pm-dashboard-sanbai-corporate-airtable-fixed.html";
-    });
+   window.netlifyIdentity.on("login", (user) => {
+  window.netlifyIdentity.close();
+  // Forzamos la redirección al dashboard global
+  window.location.href = "/enterprise-viewer.html"; 
+});
   </script>
 </body>
 </html>
