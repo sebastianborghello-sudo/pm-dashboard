@@ -3,76 +3,103 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cargando Proyecto | Sanbai</title>
+  <title>Cargando... | Sanbai Dashboard</title>
   <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
-    :root { --sanbai-orange: #F76B1C; --ink: #1C1C1C; --bg: #F5F6F8; --card: #FFFFFF; }
-    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--ink); padding: 20px; }
-    .container { max-width: 1200px; margin: 0 auto; }
-    .loading { text-align: center; margin-top: 100px; font-weight: bold; }
-    .card { background: var(--card); padding: 24px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    :root {
+      --orange: #F76B1C; --ink: #1C1C1C; --bg: #F5F6F8; --card: #FFFFFF;
+      --success: #16A34A; --muted: #667085;
+    }
+    body { font-family: ui-sans-serif, system-ui, sans-serif; background: var(--bg); color: var(--ink); margin: 0; padding: 20px; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .card { background: var(--card); padding: 24px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+    header { display: flex; justify-content: space-between; align-items: center; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+    .kpi-card { background: #f9fafb; padding: 15px; border-radius: 12px; border-left: 4px solid var(--orange); }
+    .kpi-label { font-size: 0.85rem; color: var(--muted); font-weight: 600; }
+    .kpi-value { font-size: 1.25rem; font-weight: 800; color: var(--ink); }
+    .scope-list { list-style: none; padding: 0; }
+    .scope-list li { padding: 8px 0; border-bottom: 1px solid #edf2f7; display: flex; gap: 10px; }
+    .loading-state { text-align: center; padding: 100px; }
     .hidden { display: none; }
-    /* Reutiliza aquí el CSS de tus archivos originales para mantener el look & feel */
+    @media print { .no-print { display: none; } body { background: white; padding: 0; } .card { box-shadow: none; border: 1px solid #eee; } }
   </style>
 </head>
 <body>
-  <div id="loading" class="loading"><i class="fas fa-spinner fa-spin"></i> Cargando datos seguros...</div>
-  
-  <div id="content" class="container hidden">
+  <div id="loader" class="loading-state">
+    <i class="fas fa-circle-notch fa-spin fa-3x" style="color: var(--orange)"></i>
+    <p>Cargando información segura de Sanbai...</p>
+  </div>
+
+  <div id="viewer" class="container hidden">
     <header class="card">
-      <h1 id="projName">Nombre del Proyecto</h1>
-      <p id="projSubtitle" style="color: #666;"></p>
+      <div>
+        <h1 id="pName" style="margin:0"></h1>
+        <p id="pSubtitle" style="color:var(--muted); margin:5px 0 0"></p>
+      </div>
+      <button onclick="window.print()" class="no-print" style="padding:10px 20px; border-radius:8px; border:none; background:var(--ink); color:white; cursor:pointer;">
+        <i class="fas fa-file-pdf"></i> Exportar
+      </button>
     </header>
 
     <div class="card">
-      <h2><i class="fa-solid fa-flag"></i> Objetivo Principal</h2>
-      <p id="projObjective"></p>
+      <h3><i class="fas fa-flag" style="color:var(--orange)"></i> Objetivo del Proyecto</h3>
+      <p id="pObjective" style="line-height:1.6"></p>
     </div>
 
-    <div id="customContent">
-      </div>
+    <div class="card">
+      <h3><i class="fas fa-chart-line" style="color:var(--orange)"></i> Indicadores Clave (KPIs)</h3>
+      <div id="pKpis" class="kpi-grid"></div>
+    </div>
+
+    <div class="card">
+      <h3><i class="fas fa-list-check" style="color:var(--orange)"></i> Alcance y Entregables</h3>
+      <ul id="pScope" class="scope-list"></ul>
+    </div>
   </div>
 
   <script>
-    async function init() {
+    async function loadData() {
       const user = netlifyIdentity.currentUser();
       if (!user) { netlifyIdentity.open(); return; }
-
-      const params = new URLSearchParams(window.location.search);
-      const key = params.get('key');
+      
+      const key = new URLSearchParams(window.location.search).get('key');
       const token = await user.jwt();
 
       try {
         const res = await fetch(`/.netlify/functions/presentation-data?type=project&key=${key}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        
-        if (!res.ok) throw new Error("No autorizado o error de servidor");
-        
         const data = await res.json();
         render(data);
-      } catch (err) {
-        document.getElementById('loading').innerHTML = `<h2 style="color:red">Error: ${err.message}</h2>`;
+      } catch (e) {
+        document.getElementById('loader').innerHTML = "<h2>Error de acceso o proyecto no encontrado.</h2>";
       }
     }
 
-    function render(data) {
-      document.getElementById('loading').classList.add('hidden');
-      document.getElementById('content').classList.remove('hidden');
+    function render(d) {
+      document.getElementById('loader').classList.add('hidden');
+      document.getElementById('viewer').classList.remove('hidden');
       
-      document.title = `${data.name} | Sanbai`;
-      document.getElementById('projName').textContent = data.name;
-      document.getElementById('projSubtitle').textContent = data.subtitle || '';
-      document.getElementById('projObjective').textContent = data.objective;
-      
-      // Inyección de contenido dinámico (puedes expandir esto según el proyecto)
-      if (data.htmlSnippet) {
-        document.getElementById('customContent').innerHTML = data.htmlSnippet;
-      }
+      document.title = d.name;
+      document.getElementById('pName').innerText = d.name;
+      document.getElementById('pSubtitle').innerText = d.subtitle;
+      document.getElementById('pObjective').innerText = d.objective;
+
+      document.getElementById('pKpis').innerHTML = d.kpis.map(k => `
+        <div class="kpi-card">
+          <div class="kpi-label">${k.label}</div>
+          <div class="kpi-value">${k.value}</div>
+        </div>
+      `).join('');
+
+      document.getElementById('pScope').innerHTML = d.scope.map(s => `
+        <li><i class="fas fa-check-circle" style="color:var(--success)"></i> ${s}</li>
+      `).join('');
     }
 
-    netlifyIdentity.on('init', user => { if (!user) netlifyIdentity.open(); else init(); });
+    netlifyIdentity.on('init', u => { if(!u) netlifyIdentity.open(); else loadData(); });
     netlifyIdentity.on('login', () => location.reload());
   </script>
 </body>
