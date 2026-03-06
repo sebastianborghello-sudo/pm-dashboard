@@ -1,100 +1,208 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sanbai · Executive Control Tower</title>
-  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <style>
-    :root {
-      --orange: #F76B1C; --bg: #0B1020; --card: #161B2D; --text: #FFFFFF; --muted: #94A3B8;
-    }
-    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 30px; }
-    .container { max-width: 1200px; margin: 0 auto; }
-    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-    .card { background: var(--card); padding: 25px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); }
-    .stat-val { font-size: 2.5rem; font-weight: 800; color: var(--orange); }
-    .project-row { 
-      display: flex; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.1); 
-      cursor: pointer; transition: 0.2s;
-    }
-    .project-row:hover { color: var(--orange); padding-left: 10px; }
-    .loading-overlay { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
-    .hidden { display: none; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sanbai · UDN Enterprise Control Tower</title>
+    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root {
+            --orange: #F76B1C; 
+            --bg: #0B1020; 
+            --card: #161B2D; 
+            --text: #FFFFFF; 
+            --muted: #94A3B8;
+            --border: rgba(255,255,255,0.08);
+        }
+        
+        body { 
+            font-family: 'Segoe UI', system-ui, sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            margin: 0; 
+            padding: 20px; 
+            line-height: 1.5;
+        }
+
+        .container { max-width: 1100px; margin: 0 auto; }
+
+        /* Header & Logout */
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 40px; 
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        .user-zone { display: flex; align-items: center; gap: 15px; }
+        .btn-logout { 
+            background: transparent; 
+            border: 1px solid var(--muted); 
+            color: var(--muted); 
+            padding: 6px 12px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 0.8rem;
+        }
+        .btn-logout:hover { color: white; border-color: white; }
+
+        /* Stats Grid */
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .card { 
+            background: var(--card); 
+            padding: 24px; 
+            border-radius: 18px; 
+            border: 1px solid var(--border);
+            transition: transform 0.3s ease;
+        }
+        .stat-label { color: var(--muted); font-size: 0.9rem; font-weight: 500; margin-bottom: 10px; display: block; }
+        .stat-val { font-size: 2.8rem; font-weight: 800; color: var(--orange); display: block; }
+
+        /* Project List */
+        .project-list-container { background: var(--card); border-radius: 18px; border: 1px solid var(--border); overflow: hidden; }
+        .list-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        
+        .project-row { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            padding: 18px 24px; 
+            border-bottom: 1px solid var(--border); 
+            cursor: pointer; 
+            transition: all 0.2s ease;
+        }
+        .project-row:last-child { border-bottom: none; }
+        .project-row:hover { background: rgba(255,255,255,0.03); transform: translateX(5px); }
+        .project-info h4 { margin: 0; font-size: 1.1rem; color: var(--text); }
+        .project-info p { margin: 4px 0 0; font-size: 0.85rem; color: var(--muted); }
+        
+        .arrow-icon { color: var(--muted); transition: 0.2s; }
+        .project-row:hover .arrow-icon { color: var(--orange); transform: scale(1.2); }
+
+        /* Loader */
+        .loading-overlay { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; transition: 0.5s; }
+        .hidden { opacity: 0; pointer-events: none; }
+
+        @media (max-width: 600px) {
+            .header { flex-direction: column; text-align: center; gap: 20px; }
+            .stat-val { font-size: 2rem; }
+        }
+    </style>
 </head>
 <body>
-  <div id="loader" class="loading-overlay">
-    <i class="fas fa-circle-notch fa-spin fa-3x" style="color: var(--orange)"></i>
-    <p style="margin-top:20px">Sincronizando Torre de Control...</p>
-  </div>
 
-  <div id="app" class="container hidden">
-    <div class="header">
-      <div>
-        <h1 style="margin:0">Sanbai <span style="font-weight:200">UDN Enterprise</span></h1>
-        <p style="color:var(--muted)">Resumen ejecutivo de operaciones</p>
-      </div>
-      <img src="https://sanbai.com.ar/wp-content/uploads/2023/10/logo-sanbai-white.png" alt="Sanbai" height="40">
+    <div id="loader" class="loading-overlay">
+        <i class="fas fa-circle-notch fa-spin fa-3x" style="color: var(--orange)"></i>
+        <p style="margin-top:20px; letter-spacing: 1px;">SINCRONIZANDO UDN ENTERPRISE...</p>
     </div>
 
-    <div class="grid" style="margin-bottom: 30px;">
-      <div class="card">
-        <p style="color:var(--muted); margin:0">Proyectos Activos</p>
-        <div id="totalProj" class="stat-val">0</div>
-      </div>
-      <div class="card">
-        <p style="color:var(--muted); margin:0">Margen Promedio</p>
-        <div id="avgMargin" class="stat-val">0%</div>
-      </div>
+    <div id="app" class="container hidden">
+        <header class="header">
+            <div>
+                <h1 style="margin:0; font-weight: 800; letter-spacing: -1px;">Sanbai <span style="color:var(--orange); font-weight: 300;">Control Tower</span></h1>
+                <p style="color:var(--muted); margin: 5px 0 0;">Unidad de Negocio Enterprise · Visión Global</p>
+            </div>
+            <div class="user-zone">
+                <img src="https://sanbai.com.ar/wp-content/uploads/2023/10/logo-sanbai-white.png" alt="Sanbai" height="35">
+                <button class="btn-logout" onclick="logout()">Cerrar Sesión</button>
+            </div>
+        </header>
+
+        <section class="grid">
+            <div class="card">
+                <span class="stat-label">PROYECTOS ACTIVOS</span>
+                <span id="totalProj" class="stat-val">0</span>
+            </div>
+            <div class="card">
+                <span class="stat-label">MARGEN PROMEDIO UDN</span>
+                <span id="avgMargin" class="stat-val">0%</span>
+            </div>
+        </section>
+
+        <section class="project-list-container">
+            <div class="list-header">
+                <h3 style="margin:0"><i class="fa-solid fa-layer-group" style="color:var(--orange); margin-right:10px;"></i> Portafolio de Proyectos</h3>
+            </div>
+            <div id="projectList">
+                </div>
+        </section>
     </div>
 
-    <div class="card">
-      <h3>Proyectos en Curso</h3>
-      <div id="projectList"></div>
-    </div>
-  </div>
+    <script>
+        async function fetchData() {
+            const user = netlifyIdentity.currentUser();
+            if (!user) { 
+                netlifyIdentity.open(); 
+                return; 
+            }
+            
+            try {
+                const token = await user.jwt();
+                const res = await fetch('/.netlify/functions/presentation-data?type=enterprise', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                
+                if (!res.ok) throw new Error("Error en la respuesta del servidor");
+                
+                const data = await res.json();
+                render(data);
+            } catch (e) {
+                console.error("Fetch error:", e);
+                document.getElementById('loader').innerHTML = `
+                    <i class="fas fa-exclamation-triangle fa-2x" style="color:var(--orange)"></i>
+                    <p style="margin-top:15px">Error al cargar datos. Verificá tu conexión o permisos.</p>
+                    <button onclick="location.reload()" style="margin-top:10px; background:var(--orange); color:white; border:none; padding:8px 16px; border-radius:5px; cursor:pointer">Reintentar</button>
+                `;
+            }
+        }
 
-  <script>
-    async function fetchData() {
-      const user = netlifyIdentity.currentUser();
-      if (!user) { netlifyIdentity.identity.open(); return; }
-      
-      const token = await user.jwt();
-      try {
-        const res = await fetch('/.netlify/functions/presentation-data?type=enterprise', {
-          headers: { Authorization: `Bearer ${token}` }
+        function render(data) {
+            // Quitar loader
+            document.getElementById('loader').classList.add('hidden');
+            document.getElementById('app').classList.remove('hidden');
+            
+            // Stats globales
+            document.getElementById('totalProj').innerText = data.stats.total || 0;
+            document.getElementById('avgMargin').innerText = (data.stats.margin || 0) + '%';
+            
+            // Lista de proyectos
+            const list = document.getElementById('projectList');
+            if (data.projects && data.projects.length > 0) {
+                list.innerHTML = data.projects.map(p => `
+                    <div class="project-row" onclick="window.location.href='/project-viewer.html?key=${p.key}'">
+                        <div class="project-info">
+                            <h4>${p.name}</h4>
+                            <p>${p.subtitle || 'Ver detalles del proyecto'}</p>
+                        </div>
+                        <div class="arrow-icon">
+                            <i class="fas fa-chevron-right"></i>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                list.innerHTML = '<p style="padding:24px; color:var(--muted)">No hay proyectos registrados para mostrar.</p>';
+            }
+        }
+
+        function logout() {
+            netlifyIdentity.logout();
+        }
+
+        // Manejo de eventos de Identidad
+        netlifyIdentity.on('init', u => { 
+            if(!u) netlifyIdentity.open(); 
+            else fetchData(); 
         });
-        const data = await res.json();
-        render(data);
-      } catch (e) {
-        console.error(e);
-      }
-    }
+        
+        netlifyIdentity.on('login', () => {
+            location.reload();
+        });
 
-    function render(data) {
-      document.getElementById('loader').classList.add('hidden');
-      document.getElementById('app').classList.remove('hidden');
-      
-      document.getElementById('totalProj').innerText = data.stats.total;
-      document.getElementById('avgMargin').innerText = data.stats.margin + '%';
-      
-      document.getElementById('projectList').innerHTML = data.projects.map(p => `
-        <div class="project-row" onclick="window.location.href='/project-viewer.html?key=${p.key}'">
-          <div>
-            <div style="font-weight:bold">${p.name}</div>
-            <div style="font-size:0.8rem; color:var(--muted)">${p.subtitle}</div>
-          </div>
-          <div style="text-align:right">
-            <i class="fas fa-chevron-right"></i>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    netlifyIdentity.on('init', u => { if(!u) netlifyIdentity.open(); else fetchData(); });
-  </script>
+        netlifyIdentity.on('logout', () => {
+            location.href = "/login.html";
+        });
+    </script>
 </body>
 </html>
