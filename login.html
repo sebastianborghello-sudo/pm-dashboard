@@ -19,36 +19,34 @@
   </div>
 
 <script>
-  // Función para redirigir según el estado del usuario
   function handleAuth(user) {
     if (user) {
-      console.log("Usuario detectado:", user.email);
-      // Forzamos la redirección al dashboard global
-      window.location.href = "/enterprise-viewer.html";
+      console.log("Sesión confirmada para:", user.email);
+      // El delay de 800ms evita que Netlify Identity y el TOML choquen
+      setTimeout(() => {
+        window.location.replace("/enterprise-viewer.html");
+      }, 800);
     }
   }
 
-  // Inicializar Netlify Identity
   function init() {
-    // 1. Si el usuario ya inició sesión previamente
-    const currentUser = window.netlifyIdentity.currentUser();
-    if (currentUser) {
-      handleAuth(currentUser);
+    // Si ya está logueado al abrir la página
+    const user = window.netlifyIdentity.currentUser();
+    if (user) {
+      handleAuth(user);
     }
 
-    // 2. Evento de login exitoso
     window.netlifyIdentity.on("login", user => {
       window.netlifyIdentity.close();
       handleAuth(user);
     });
 
-    // 3. Configurar el botón
     document.getElementById("btnLogin").addEventListener("click", () => {
       window.netlifyIdentity.open();
     });
   }
 
-  // Esperar a que la librería cargue correctamente
+  // Espera segura para la carga de la librería
   if (window.netlifyIdentity) {
     init();
   } else {
