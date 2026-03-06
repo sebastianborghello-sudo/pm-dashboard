@@ -18,17 +18,29 @@
     <button id="btnLogin">Iniciar sesión</button>
   </div>
 
-  <script>
-    const btn = document.getElementById("btnLogin");
-    btn.addEventListener("click", () => {
-      window.netlifyIdentity.open();
-    });
+<script>
+  const btn = document.getElementById("btnLogin");
+  btn.addEventListener("click", () => {
+    window.netlifyIdentity.open();
+  });
 
-   window.netlifyIdentity.on("login", (user) => {
-  window.netlifyIdentity.close();
-  // Forzamos la redirección al dashboard global
-  window.location.href = "/enterprise-viewer.html"; 
-});
-  </script>
+  // Si el usuario ya está logueado al cargar la página, lo mandamos al dashboard
+  window.netlifyIdentity.on("init", user => {
+    if (user) {
+      window.location.href = "/enterprise-viewer.html";
+    }
+  });
+
+  // Al hacer login exitoso
+  window.netlifyIdentity.on("login", (user) => {
+    window.netlifyIdentity.close();
+    // Verificamos si tiene roles. Si no tiene, avisamos.
+    const roles = user?.app_metadata?.roles || [];
+    if (roles.length === 0) {
+      alert("Atención: Tu usuario no tiene roles asignados en Netlify. Contacta al administrador.");
+    }
+    window.location.href = "/enterprise-viewer.html";
+  });
+</script>
 </body>
 </html>
