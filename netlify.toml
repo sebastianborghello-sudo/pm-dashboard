@@ -2,6 +2,29 @@
   publish = "."
   functions = "netlify/functions"
 
+# netlify.toml
+
+# Redirigir las páginas viejas al login o eliminarlas físicamente del deploy
+[[redirects]]
+  from = "/proyecto-macro-dashboard-sanbai.html"
+  to = "/project-viewer.html?key=macro_lan"
+  status = 301
+
+[[redirects]]
+  from = "/proyecto-storage-backup-dashboard-sanbai.html"
+  to = "/project-viewer.html?key=storage_backup"
+  status = 301
+
+  
+
+# Asegurar que la función de datos esté protegida
+[[redirects]]
+  from = "/.netlify/functions/presentation-data"
+  to = "/.netlify/functions/presentation-data"
+  status = 200
+  force = true
+
+
 
 # Headers extra
 [[headers]]
