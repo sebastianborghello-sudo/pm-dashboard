@@ -1,3 +1,85 @@
 [build]
-  functions = "netlify/functions"
   publish = "."
+  functions = "netlify/functions"
+
+# =========================
+# Access control by role
+# =========================
+
+# Dashboard PM operativo
+[[redirects]]
+  from = "/pm-dashboard-sanbai-corporate-airtable-fixed"
+  to = "/.netlify/functions/require-auth"
+  status = 200
+  force = true
+  conditions = {Role = ["pm_admin", "pm_editor", "pm_viewer"]}
+
+# Executive dashboard
+[[redirects]]
+  from = "/dashboard-enterprise"
+  to = "/.netlify/functions/require-auth"
+  status = 200
+  force = true
+  conditions = {Role = ["pm_admin", "pm_viewer"]}
+
+# Dashboards de proyecto
+[[redirects]]
+  from = "/proyecto-macro-dashboard-sanbai.html"
+  to = "/.netlify/functions/require-auth"
+  status = 200
+  force = true
+  conditions = {Role = ["pm_admin", "pm_editor", "pm_viewer"]}
+
+[[redirects]]
+  from = "/proyecto-storage-backup-dashboard-sanbai.html"
+  to = "/.netlify/functions/require-auth"
+  status = 200
+  force = true
+  conditions = {Role = ["pm_admin", "pm_editor", "pm_viewer"]}
+
+[[redirects]]
+  from = "/proyecto-sdwan-dashboard-sanbai.html"
+  to = "/.netlify/functions/require-auth"
+  status = 200
+  force = true
+  conditions = {Role = ["pm_admin", "pm_editor", "pm_viewer"]}
+
+# Fallback: si no cumple rol, mandar a login
+[[redirects]]
+  from = "/pm-dashboard-sanbai-corporate-airtable-fixed"
+  to = "/login.html"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/dashboard-enterprise"
+  to = "/login.html"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/proyecto-macro-dashboard-sanbai.html"
+  to = "/login.html"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/proyecto-storage-backup-dashboard-sanbai.html"
+  to = "/login.html"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/proyecto-sdwan-dashboard-sanbai.html"
+  to = "/login.html"
+  status = 302
+  force = true
+
+# Headers extra
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
