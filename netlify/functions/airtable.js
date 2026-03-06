@@ -165,12 +165,18 @@ exports.handler = async (event, context) => {
   }
 };
 
-// 5. EXPORTACIÓN PARA OTRAS FUNCIONES (IMPORTANTE)
+
+
+// ESTA ES LA PARTE CRÍTICA QUE FALTA O ESTÁ MAL:
+// Netlify busca "exports.handler", pero Node busca "module.exports"
+// Para que ambos funcionen, debemos unificarlos así:
+
+const handler = exports.handler; // Guardamos el handler que ya definiste arriba
+
 module.exports = {
-  airtableReq,
-  baseApi,
+  handler,           // Esto permite que Netlify encuentre la función
+  airtableReq,       // Esto permite que presentation-data.js use la función
+  baseApi,           // Esto permite que presentation-data.js use la función
   getUser,
-  getRoles,
-  buildProjectMaps,
-  TABLE_PROJECTS
+  getRoles
 };
