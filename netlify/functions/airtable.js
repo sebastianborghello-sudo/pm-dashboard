@@ -450,3 +450,11 @@ if (["POST", "PATCH", "DELETE"].includes(event.httpMethod)) {
     };
   }
 };
+
+// Al final de netlify/functions/airtable.js añadir:
+module.exports = {
+  airtableReq,
+  baseApi,
+  getUser,
+  getRoles
+};
