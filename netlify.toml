@@ -28,6 +28,12 @@
   status = 200
   conditions = {Role = ["pm_admin", "pm_editor", "pm_viewer"]}
 
+  [[redirects]]
+  from = "/.netlify/functions/presentation-data"
+  to = "/.netlify/functions/presentation-data"
+  status = 200
+  force = true
+
 # 4. FALLBACK: Si no tiene el rol anterior, mandarlo al login
 # Usamos force = false para que no atrape peticiones de scripts internos
 [[redirects]]
