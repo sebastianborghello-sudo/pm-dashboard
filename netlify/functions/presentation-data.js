@@ -1,54 +1,44 @@
-// netlify/functions/presentation-data.js
-const { airtableReq, baseApi, TABLE_PROJECTS } = require("./airtable");
+const { airtableReq, baseApi } = require("./airtable");
 
 exports.handler = async (event, context) => {
   const user = context?.clientContext?.user;
-  if (!user) return { statusCode: 401, body: "Sin acceso" };
+  if (!user) return { statusCode: 401, body: "No autorizado" };
 
   const { type, key } = event.queryStringParameters;
 
-  // Lógica para PROYECTOS individuales
+  // LÓGICA PARA PROYECTOS
   if (type === 'project' && key) {
-    // 1. Buscamos en Airtable el proyecto por su KEY
     const filter = `SEARCH("${key}", {Project Key})`;
     const url = `${baseApi('Projects')}?filterByFormula=${encodeURIComponent(filter)}`;
     const response = await airtableReq("GET", url);
-    const project = response.records[0];
+    const record = response.records[0];
 
-    if (!project) return { statusCode: 404, body: "Proyecto no encontrado" };
+    if (!record) return { statusCode: 404, body: "No encontrado" };
 
-    // 2. Construimos la respuesta dinámica
+    // Extraemos el JSON del campo que creaste
+    const executiveData = JSON.parse(record.fields["Executive_Data"] || "{}");
+
     return {
       statusCode: 200,
       body: JSON.stringify({
-        name: project.fields["Name"],
-        subtitle: project.fields["Subtitle"],
-        objective: project.fields["Objective"] || "Sin objetivo definido.",
-        // Aquí podrías enviar más datos (presupuesto, progreso, etc.)
+        name: record.fields["Name"],
+        subtitle: record.fields["Subtitle"],
+        ...executiveData
       })
     };
   }
-  
-  return { statusCode: 400, body: "Petición inválida" };
-};
-// Actualización en netlify/functions/presentation-data.js
-if (type === 'project' && key) {
-    const filter = `SEARCH("${key}", {Project Key})`;
-    const url = `${baseApi('Projects')}?filterByFormula=${encodeURIComponent(filter)}`;
-    const response = await airtableReq("GET", url);
-    const project = response.records[0];
 
-    if (!project) return { statusCode: 404, body: "No existe el proyecto" };
-
-    // Parseamos el JSON que guardaste en Airtable
-    const executiveData = JSON.parse(project.fields["Executive_Data"] || "{}");
-
+  // LÓGICA PARA ENTERPRISE (Global)
+  if (type === 'enterprise') {
+    // Aquí puedes traer el resumen de la nueva tabla Enterprise_Config
+    // O simplemente devolver un resumen de todos los proyectos
     return {
       statusCode: 200,
       body: JSON.stringify({
-        name: project.fields["Name"],
-        subtitle: project.fields["Subtitle"],
-        ...executiveData // Esto inyecta el objective, kpis y scope automáticamente
+        title: "UDN Enterprise - Control Tower",
+        active_projects: 3,
+        total_margin: "24.2%"
       })
     };
-}
+  }
+};
