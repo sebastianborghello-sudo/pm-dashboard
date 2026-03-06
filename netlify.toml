@@ -4,26 +4,31 @@
 
 # netlify.toml
 
-# Redirigir las páginas viejas al login o eliminarlas físicamente del deploy
+
+
+
+# Redirección de URLs viejas a la nueva lógica dinámica
 [[redirects]]
-  from = "/proyecto-macro-dashboard-sanbai.html"
+  from = "/proyecto/macro"
   to = "/project-viewer.html?key=macro_lan"
-  status = 301
+  status = 200
 
 [[redirects]]
-  from = "/proyecto-storage-backup-dashboard-sanbai.html"
+  from = "/proyecto/sdwan"
+  to = "/project-viewer.html?key=sdwan_nubes"
+  status = 200
+
+[[redirects]]
+  from = "/proyecto/storage"
   to = "/project-viewer.html?key=storage_backup"
-  status = 301
+  status = 200
 
-  
-
-# Asegurar que la función de datos esté protegida
+# Protección para la función de datos
 [[redirects]]
   from = "/.netlify/functions/presentation-data"
   to = "/.netlify/functions/presentation-data"
   status = 200
   force = true
-
 
 
 # Headers extra
