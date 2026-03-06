@@ -21,20 +21,17 @@
 <script>
   function handleAuth(user) {
     if (user) {
-      console.log("Sesión confirmada para:", user.email);
-      // El delay de 800ms evita que Netlify Identity y el TOML choquen
+      console.log("Sesión activa:", user.email);
+      // Esperamos a que Netlify Identity asiente la cookie en el navegador
       setTimeout(() => {
         window.location.replace("/enterprise-viewer.html");
-      }, 800);
+      }, 1000);
     }
   }
 
   function init() {
-    // Si ya está logueado al abrir la página
     const user = window.netlifyIdentity.currentUser();
-    if (user) {
-      handleAuth(user);
-    }
+    if (user) handleAuth(user);
 
     window.netlifyIdentity.on("login", user => {
       window.netlifyIdentity.close();
@@ -46,7 +43,6 @@
     });
   }
 
-  // Espera segura para la carga de la librería
   if (window.netlifyIdentity) {
     init();
   } else {
