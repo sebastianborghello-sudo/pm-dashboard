@@ -2,32 +2,78 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Cargando Proyecto...</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cargando Proyecto | Sanbai</title>
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  </head>
+  <style>
+    :root { --sanbai-orange: #F76B1C; --ink: #1C1C1C; --bg: #F5F6F8; --card: #FFFFFF; }
+    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--ink); padding: 20px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .loading { text-align: center; margin-top: 100px; font-weight: bold; }
+    .card { background: var(--card); padding: 24px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    .hidden { display: none; }
+    /* Reutiliza aquí el CSS de tus archivos originales para mantener el look & feel */
+  </style>
+</head>
 <body>
-  <div id="app">
-    <h1 id="project-title">Cargando...</h1>
-    <div id="content"></div>
+  <div id="loading" class="loading"><i class="fas fa-spinner fa-spin"></i> Cargando datos seguros...</div>
+  
+  <div id="content" class="container hidden">
+    <header class="card">
+      <h1 id="projName">Nombre del Proyecto</h1>
+      <p id="projSubtitle" style="color: #666;"></p>
+    </header>
+
+    <div class="card">
+      <h2><i class="fa-solid fa-flag"></i> Objetivo Principal</h2>
+      <p id="projObjective"></p>
+    </div>
+
+    <div id="customContent">
+      </div>
   </div>
 
   <script>
     async function init() {
+      const user = netlifyIdentity.currentUser();
+      if (!user) { netlifyIdentity.open(); return; }
+
       const params = new URLSearchParams(window.location.search);
       const key = params.get('key');
-      
-      const response = await fetch(`/.netlify/functions/presentation-data?type=project&key=${key}`);
-      const data = await response.json();
+      const token = await user.jwt();
 
-      // Renderizado dinámico
-      document.title = data.Name;
-      document.getElementById('project-title').textContent = data.Name;
-      document.getElementById('content').innerHTML = `
-        <p><strong>Estado:</strong> ${data.Status}</p>
-        <p><strong>Cliente:</strong> ${data.Client}</p>
-        `;
+      try {
+        const res = await fetch(`/.netlify/functions/presentation-data?type=project&key=${key}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (!res.ok) throw new Error("No autorizado o error de servidor");
+        
+        const data = await res.json();
+        render(data);
+      } catch (err) {
+        document.getElementById('loading').innerHTML = `<h2 style="color:red">Error: ${err.message}</h2>`;
+      }
     }
-    init();
+
+    function render(data) {
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('content').classList.remove('hidden');
+      
+      document.title = `${data.name} | Sanbai`;
+      document.getElementById('projName').textContent = data.name;
+      document.getElementById('projSubtitle').textContent = data.subtitle || '';
+      document.getElementById('projObjective').textContent = data.objective;
+      
+      // Inyección de contenido dinámico (puedes expandir esto según el proyecto)
+      if (data.htmlSnippet) {
+        document.getElementById('customContent').innerHTML = data.htmlSnippet;
+      }
+    }
+
+    netlifyIdentity.on('init', user => { if (!user) netlifyIdentity.open(); else init(); });
+    netlifyIdentity.on('login', () => location.reload());
   </script>
 </body>
 </html>
