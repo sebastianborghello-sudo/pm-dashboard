@@ -1,5 +1,56 @@
 // netlify/functions/airtable.js
-exports.handler = async (event) => {
+
+function getUser(context) {
+  return context?.clientContext?.user || null;
+}
+
+function getRoles(context) {
+  const user = getUser(context);
+  return user?.app_metadata?.roles || [];
+}
+
+function hasSomeRole(context, allowed = []) {
+  const roles = getRoles(context);
+  return allowed.some(r => roles.includes(r));
+}
+
+function authError(statusCode, message) {
+  return {
+    statusCode,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Allow-Methods": "GET,POST,PATCH,DELETE,OPTIONS",
+      "Cache-Control": "no-store",
+    },
+    body: JSON.stringify({
+      ok: false,
+      error: message,
+    }),
+  };
+}
+
+function requireRead(context) {
+  const user = getUser(context);
+  if (!user) return authError(401, "Unauthorized");
+  if (!hasSomeRole(context, ["pm_admin", "pm_editor", "pm_viewer"])) {
+    return authError(403, "Forbidden");
+  }
+  return null;
+}
+
+function requireWrite(context) {
+  const user = getUser(context);
+  if (!user) return authError(401, "Unauthorized");
+  if (!hasSomeRole(context, ["pm_admin", "pm_editor"])) {
+    return authError(403, "Forbidden");
+  }
+  return null;
+}
+
+
+exports.handler = async (event, context) => {
   const json = (statusCode, bodyObj, extraHeaders = {}) => ({
     statusCode,
     headers: {
@@ -31,6 +82,19 @@ exports.handler = async (event) => {
         error: "Missing env vars AIRTABLE_BASE_ID / AIRTABLE_TOKEN",
       });
     }
+    // CORS / preflight
+if (event.httpMethod === "OPTIONS") return json(200, { ok: true });
+
+// Auth by method
+if (event.httpMethod === "GET") {
+  const denied = requireRead(context);
+  if (denied) return denied;
+}
+
+if (["POST", "PATCH", "DELETE"].includes(event.httpMethod)) {
+  const denied = requireWrite(context);
+  if (denied) return denied;
+}
 
     const baseApi = (table) =>
       `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(table)}`;
