@@ -59,48 +59,90 @@
     </div>
   </div>
 
-  <script>
-    async function loadData() {
-      const user = netlifyIdentity.currentUser();
-      if (!user) { netlifyIdentity.open(); return; }
-      
-      const key = new URLSearchParams(window.location.search).get('key');
+<script>
+  let booting = false;
+
+  async function getCurrentUserOrPrompt() {
+    const user = netlifyIdentity.currentUser();
+    if (user) return user;
+
+    if (!sessionStorage.getItem("identity_prompt_open")) {
+      sessionStorage.setItem("identity_prompt_open", "1");
+      netlifyIdentity.open();
+    }
+    throw new Error("LOGIN_REQUIRED");
+  }
+
+  async function bootstrap() {
+    if (booting) return;
+    booting = true;
+
+    try {
+      const key = new URLSearchParams(window.location.search).get("key");
+      if (!key) throw new Error("Falta el parámetro key");
+
+      const user = await getCurrentUserOrPrompt();
       const token = await user.jwt();
 
-      try {
-        const res = await fetch(`/.netlify/functions/presentation-data?type=project&key=${key}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const data = await res.json();
-        render(data);
-      } catch (e) {
-        document.getElementById('loader').innerHTML = "<h2>Error de acceso o proyecto no encontrado.</h2>";
+      const res = await fetch(`/.netlify/functions/presentation-data?type=project&key=${encodeURIComponent(key)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        throw new Error(data?.error || "Proyecto no encontrado");
       }
+
+      render(data);
+    } catch (e) {
+      if (e.message === "LOGIN_REQUIRED") return;
+
+      console.error(e);
+      document.getElementById("loader").innerHTML = `
+        <i class="fas fa-exclamation-triangle fa-2x" style="color: var(--orange)"></i>
+        <p style="margin-top:15px">${e.message}</p>
+      `;
+    } finally {
+      booting = false;
     }
+  }
 
-    function render(d) {
-      document.getElementById('loader').classList.add('hidden');
-      document.getElementById('viewer').classList.remove('hidden');
-      
-      document.title = d.name;
-      document.getElementById('pName').innerText = d.name;
-      document.getElementById('pSubtitle').innerText = d.subtitle;
-      document.getElementById('pObjective').innerText = d.objective;
+  function render(d) {
+    document.getElementById("loader").classList.add("hidden");
+    document.getElementById("viewer").classList.remove("hidden");
 
-      document.getElementById('pKpis').innerHTML = d.kpis.map(k => `
-        <div class="kpi-card">
-          <div class="kpi-label">${k.label}</div>
-          <div class="kpi-value">${k.value}</div>
-        </div>
-      `).join('');
+    document.title = d.name || "Proyecto";
+    document.getElementById("pName").innerText = d.name || "";
+    document.getElementById("pSubtitle").innerText = d.subtitle || "";
+    document.getElementById("pObjective").innerText = d.objective || "";
 
-      document.getElementById('pScope').innerHTML = d.scope.map(s => `
-        <li><i class="fas fa-check-circle" style="color:var(--success)"></i> ${s}</li>
-      `).join('');
-    }
+    document.getElementById("pKpis").innerHTML = (d.kpis || []).map(k => `
+      <div class="kpi-card">
+        <div class="kpi-label">${k.label || ""}</div>
+        <div class="kpi-value">${k.value || ""}</div>
+      </div>
+    `).join("");
 
-    netlifyIdentity.on('init', u => { if(!u) netlifyIdentity.open(); else loadData(); });
-    netlifyIdentity.on('login', () => location.reload());
-  </script>
+    document.getElementById("pScope").innerHTML = (d.scope || []).map(s => `
+      <li><i class="fas fa-check-circle" style="color:var(--success)"></i> ${s}</li>
+    `).join("");
+  }
+
+  netlifyIdentity.on("init", () => {
+    bootstrap();
+  });
+
+  netlifyIdentity.on("login", () => {
+    sessionStorage.removeItem("identity_prompt_open");
+    netlifyIdentity.close();
+    bootstrap();
+  });
+
+  netlifyIdentity.on("logout", () => {
+    sessionStorage.removeItem("identity_prompt_open");
+    location.href = "/login.html";
+  });
+</script>
 </body>
 </html>
