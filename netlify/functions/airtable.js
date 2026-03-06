@@ -117,7 +117,7 @@ async function buildProjectMaps() {
   return { projectsRec, projectIdToKey, projectKeyToId };
 }
 
-// 4. Handler Principal (Lógica de la Function de Netlify)
+// 4. Handler Principal
 exports.handler = async (event, context) => {
   const json = (statusCode, bodyObj) => ({
     statusCode,
@@ -134,7 +134,7 @@ exports.handler = async (event, context) => {
     if (event.httpMethod === "OPTIONS") return json(200, { ok: true });
     if (!BASE_ID || !TOKEN) return json(500, { error: "Missing Env Vars" });
 
-    // Validación de Auth
+    // Validación de Seguridad
     if (event.httpMethod === "GET") {
       const denied = requireRead(context);
       if (denied) return denied;
@@ -146,17 +146,93 @@ exports.handler = async (event, context) => {
     const path = event.path || "";
     const subpath = path.replace("/.netlify/functions/airtable", "").replace(/^\/+/, "");
 
-    // --- Lógica de Rutas (GET Projects, POST Tasks, etc.) ---
-    // (Mantenemos tu lógica original de routing aquí dentro)
-    
+    // --- RUTA: GET /airtable (Esta es la que llena el Dashboard PM) ---
     if (event.httpMethod === "GET" && (subpath === "" || subpath === "projects")) {
-        // ... (tu lógica de GET /airtable)
-        const { projectsRec, projectIdToKey } = await buildProjectMaps();
-        // ... el resto de tu código de mapeo
-        return json(200, { ok: true, projects: {} /* aquí irían tus datos mapeados */ });
-    }
+      const { projectsRec, projectIdToKey } = await buildProjectMaps();
 
-    // (Omitido por brevedad, pero conserva aquí tus bloques de POST/PATCH/DELETE)
+      const [tasksRec, teamRec, criticalRec, cashflowRec] = await Promise.all([
+        fetchAll(TABLE_TASKS),
+        fetchAll(TABLE_TEAM),
+        fetchAll(TABLE_CRITICAL),
+        fetchAll(TABLE_CASHFLOW),
+      ]);
+
+      const projects = {};
+
+      // 1. Inicializar estructura de proyectos
+      for (const p of projectsRec) {
+        const pf = p.fields || {};
+        const key = pf["Project Key"];
+        if (!key) continue;
+
+        projects[key] = {
+          meta: {
+            name: pf["Name"] || "",
+            subtitle: pf["Subtitle"] || "",
+            statusLabel: pf["Status Label"] || "",
+            client: pf["Client"] || "",
+            amount: pf["Amount"] || "",
+            start: pf["Start Display"] || "",
+            end: pf["End Display"] || "",
+            pm: pf["PM"] || "",
+            ganttStart: pf["Gantt Start"] || null,
+            ganttEnd: pf["Gantt End"] || null,
+          },
+          tasks: [], team: [], critical: [], cashflow: [],
+        };
+      }
+
+      // 2. Mapear Tareas
+      tasksRec.forEach(t => {
+        const projLink = t.fields["Project"];
+        const projId = Array.isArray(projLink) ? projLink[0] : projLink;
+        const key = projectIdToKey[projId];
+        if (projects[key]) {
+          projects[key].tasks.push({
+            recordId: t.id,
+            id: t.fields["Task ID"],
+            name: t.fields["Name"],
+            status: t.fields["Status"],
+            progress: t.fields["Progress"] || 0,
+            owner: t.fields["Owner"],
+            startDate: t.fields["Start Date"],
+            endDate: t.fields["End Date"],
+            description: t.fields["Description"]
+          });
+        }
+      });
+
+      // 3. Mapear Equipo
+      teamRec.forEach(m => {
+        const projId = Array.isArray(m.fields["Project"]) ? m.fields["Project"][0] : m.fields["Project"];
+        const key = projectIdToKey[projId];
+        if (projects[key]) {
+          projects[key].team.push({
+            name: m.fields["Name"],
+            role: m.fields["Role"],
+            initials: m.fields["Initials"]
+          });
+        }
+      });
+
+      // 4. Mapear Cashflow
+      cashflowRec.forEach(c => {
+        const projId = Array.isArray(c.fields["Project"]) ? c.fields["Project"][0] : c.fields["Project"];
+        const key = projectIdToKey[projId];
+        if (projects[key]) {
+          projects[key].cashflow.push({
+            recordId: c.id,
+            concept: c.fields["Concept"],
+            amount: c.fields["Amount"],
+            type: c.fields["Type"],
+            status: c.fields["Status"],
+            date: c.fields["Date"]
+          });
+        }
+      });
+
+      return json(200, { ok: true, projects });
+    }
 
     return json(404, { error: "Not found" });
   } catch (e) {
@@ -164,8 +240,6 @@ exports.handler = async (event, context) => {
     return json(500, { ok: false, error: String(e) });
   }
 };
-
-
 
 // ESTA ES LA PARTE CRÍTICA QUE FALTA O ESTÁ MAL:
 // Netlify busca "exports.handler", pero Node busca "module.exports"
