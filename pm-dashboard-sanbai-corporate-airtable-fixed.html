@@ -709,22 +709,28 @@ async function apiJSON(method, url, body) {
 }
     // ===== Cashflow API =====
 async function createCashflowRemote(item) {
+  const headers = await getAuthHeaders({ "Content-Type": "application/json" });
+
   const r = await fetch("/.netlify/functions/airtable/cashflow", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify({ projectKey: currentProjectKey, ...item }),
   });
+
   const data = await r.json();
   if (!r.ok || !data.ok) throw new Error(data?.error || "Error creando cashflow");
-  return data.record; // record Airtable
+  return data.record;
 }
 
 async function updateCashflowRemote(recordId, item) {
+  const headers = await getAuthHeaders({ "Content-Type": "application/json" });
+
   const r = await fetch(`/.netlify/functions/airtable/cashflow/${recordId}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify(item),
   });
+
   const data = await r.json();
   if (!r.ok || !data.ok) throw new Error(data?.error || "Error actualizando cashflow");
   return data.record;
