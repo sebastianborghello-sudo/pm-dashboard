@@ -1,50 +1,33 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Cargando Proyecto...</title>
-    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
-</head>
+  <meta charset="UTF-8">
+  <title>Cargando Proyecto...</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  </head>
 <body>
-    <div id="app">Cargando datos seguros...</div>
+  <div id="app">
+    <h1 id="project-title">Cargando...</h1>
+    <div id="content"></div>
+  </div>
 
-    <script>
-        async function loadProject() {
-            const params = new URLSearchParams(window.location.search);
-            const key = params.get('key');
-            
-            // Obtener el token de Netlify Identity
-            const user = netlifyIdentity.currentUser();
-            if (!user) {
-                window.location.href = "/login.html";
-                return;
-            }
-            const token = await user.jwt();
+  <script>
+    async function init() {
+      const params = new URLSearchParams(window.location.search);
+      const key = params.get('key');
+      
+      const response = await fetch(`/.netlify/functions/presentation-data?type=project&key=${key}`);
+      const data = await response.json();
 
-            try {
-                const res = await fetch(`/.netlify/functions/presentation-data?type=project&key=${key}`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                
-                if (res.status === 200) {
-                    const data = await res.json();
-                    renderProject(data);
-                } else {
-                    document.getElementById('app').innerHTML = "<h1>Acceso Denegado</h1>";
-                }
-            } catch (err) {
-                console.error("Error cargando proyecto:", err);
-            }
-        }
-
-        function renderProject(data) {
-            document.title = data.name;
-            document.getElementById('app').innerHTML = `
-                <div class="header"><h1>${data.name}</h1></div>
-                `;
-        }
-
-        netlifyIdentity.on('init', user => { if (!user) netlifyIdentity.open(); else loadProject(); });
-    </script>
+      // Renderizado dinámico
+      document.title = data.Name;
+      document.getElementById('project-title').textContent = data.Name;
+      document.getElementById('content').innerHTML = `
+        <p><strong>Estado:</strong> ${data.Status}</p>
+        <p><strong>Cliente:</strong> ${data.Client}</p>
+        `;
+    }
+    init();
+  </script>
 </body>
 </html>
