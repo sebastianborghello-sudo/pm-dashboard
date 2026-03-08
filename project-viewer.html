@@ -491,23 +491,32 @@
        TABLE
     ========================= */
 
-    if (section.type === "table") {
-      return `
-        <section class="viewer-section">
-          <h2>${section.title || ""}</h2>
-          <table class="viewer-table">
-            <thead>
-              <tr>${(section.columns || []).map(c => `<th>${c}</th>`).join("")}</tr>
-            </thead>
-            <tbody>
-              ${(section.rows || []).map(r => `
-                <tr>${r.map(c => `<td>${c}</td>`).join("")}</tr>
-              `).join("")}
-            </tbody>
-          </table>
-        </section>
-      `;
-    }
+   if (section.type === "table") {
+  return `
+    <section class="viewer-section">
+      <h2>${section.title || ""}</h2>
+      <table class="viewer-table">
+        <thead>
+          <tr>${(section.columns || []).map(c => `<th>${c}</th>`).join("")}</tr>
+        </thead>
+        <tbody>
+          ${(section.rows || []).map(r => `
+            <tr>${r.map(c => `<td>${c}</td>`).join("")}</tr>
+          `).join("")}
+        </tbody>
+        ${section.footer ? `
+          <tfoot>
+            <tr>
+              <td colspan="${section.columns.length}" style="font-weight:900;background:#fafafa;">
+                ${section.footer}
+              </td>
+            </tr>
+          </tfoot>
+        ` : ""}
+      </table>
+    </section>
+  `;
+}
 
     /* =========================
        NOTE
