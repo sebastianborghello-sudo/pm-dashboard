@@ -162,6 +162,135 @@
         throw new Error(data?.error || "Error en la respuesta del servidor");
       }
 
+function renderHero(hero){
+
+document.getElementById("heroTitle").innerText = hero.title;
+document.getElementById("heroSubtitle").innerText = hero.subtitle;
+document.getElementById("heroSummary").innerText = hero.summary;
+
+}
+        function renderKpis(kpis){
+
+const el = document.getElementById("kpiGrid");
+
+el.innerHTML = kpis.map(k=>`
+<div class="kpi-card">
+
+<div class="kpi-label">${k.label}</div>
+
+<div class="kpi-value">${k.value}</div>
+
+<div class="kpi-note">${k.note}</div>
+
+</div>
+`).join("");
+
+}
+        function renderProjects(projects){
+
+const el = document.getElementById("projectList");
+
+el.innerHTML = projects.map(p=>`
+
+<div class="project-row"
+onclick="window.location.href='/project-viewer.html?key=${p.link}'">
+
+<div class="project-info">
+
+<h4>${p.name}</h4>
+
+<p>${p.status}</p>
+
+</div>
+
+<div class="project-value">
+
+${p.value}
+
+<span class="bucket">${p.bucket}</span>
+
+</div>
+
+</div>
+
+`).join("");
+
+}
+        function renderBlockers(items){
+
+const el = document.getElementById("blockers");
+
+el.innerHTML = items.map(i=>`
+<li>${i}</li>
+`).join("");
+
+}
+        function renderGoals(goals){
+
+const el = document.getElementById("goals");
+
+el.innerHTML = goals.map(g=>`
+
+<div class="goal-card">
+
+<h4>${g.decision}</h4>
+
+<p><strong>Motivo:</strong> ${g.why}</p>
+
+<p><strong>Resultado esperado:</strong> ${g.output}</p>
+
+</div>
+
+`).join("");
+
+}
+        function renderOpportunities(list){
+
+const el = document.getElementById("opportunities");
+
+el.innerHTML = list.map(o=>`
+
+<div class="opportunity-card">
+
+<h4>${o.name}</h4>
+
+<div class="opp-value">${o.value}</div>
+
+<p>${o.description}</p>
+
+</div>
+
+`).join("");
+
+}
+        function renderComplexity(c){
+
+renderComplexityBlock("lanComplexity", c.lan);
+renderComplexityBlock("sdwanComplexity", c.sdwan);
+renderComplexityBlock("storageComplexity", c.storage);
+
+}
+
+function renderComplexityBlock(id,data){
+
+const el = document.getElementById(id);
+
+el.innerHTML = data.map(d=>`
+
+<div class="complexity-item">
+
+<span>${d.label}</span>
+
+<strong>${d.value}</strong>
+
+</div>
+
+`).join("");
+
+}
+        
+        
+
       render(data);
     } catch (e) {
       if (e.message === "LOGIN_REQUIRED") {
@@ -202,6 +331,13 @@
     } else {
       list.innerHTML = '<p style="padding:24px; color:var(--muted)">No hay proyectos registrados para mostrar.</p>';
     }
+      renderHero(data.hero);
+renderKpis(data.kpis);
+renderProjects(data.projects);
+renderBlockers(data.blockers);
+renderGoals(data.short_term_goals);
+renderOpportunities(data.opportunities);
+renderComplexity(data.complexity);
   }
 
   function logout() {
