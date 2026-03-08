@@ -27,6 +27,47 @@
       --radius-lg:18px;
       --radius-md:14px;
     }
+    .forecast-row{
+  display:grid;
+  grid-template-columns: 1.5fr 2fr 70px;
+  gap:12px;
+  align-items:center;
+  margin-bottom:12px;
+}
+
+.forecast-label{
+  font-size:13px;
+  color:rgba(255,255,255,.82);
+  line-height:1.35;
+}
+
+.forecast-label span{
+  display:block;
+  color:rgba(255,255,255,.60);
+  font-size:12px;
+  margin-top:4px;
+}
+
+.forecast-bar{
+  height:12px;
+  border-radius:999px;
+  background:rgba(255,255,255,.08);
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.08);
+}
+
+.forecast-fill{
+  height:100%;
+  border-radius:999px;
+  background:linear-gradient(90deg, var(--orange) 0%, var(--orange2) 100%);
+}
+
+.forecast-share{
+  text-align:right;
+  font-size:12px;
+  font-weight:900;
+  color:rgba(255,255,255,.85);
+}
 
     *{box-sizing:border-box;margin:0;padding:0}
     body{
@@ -491,10 +532,7 @@
       <main class="content">
         <section class="grid-3" id="kpiGrid"></section>
 
-        <section class="card">
-          <h2>Portafolio de proyectos</h2>
-          <div id="projectList" class="project-list"></div>
-        </section>
+       
 
         <section class="grid-2">
           <section class="card">
@@ -508,10 +546,7 @@
           </section>
         </section>
 
-        <section class="card">
-          <h2>Oportunidades</h2>
-          <div id="opportunities"></div>
-        </section>
+       
 
         <section class="grid-3">
           <section class="card">
@@ -710,29 +745,21 @@ ${p.value}
 
 }
 
-    function renderOpportunities(list=[]){
+function renderOpportunities2025(list = []) {
+  const el = document.getElementById("opportunities2025");
 
-const el = document.getElementById("opportunities2025");
+  if (!list.length) {
+    el.innerHTML = emptyState("No hay oportunidades 2025 cargadas");
+    return;
+  }
 
-if(!list.length){
-  el.innerHTML="";
-  return;
-}
-
-el.innerHTML = list.map(o=>`
-
-<div class="opportunity-card">
-
-<h4>${o.name}</h4>
-
-<div class="opp-value">${o.value}</div>
-
-<p>${o.description}</p>
-
-</div>
-
-`).join("");
-
+  el.innerHTML = list.map(o => `
+    <div class="opportunity-card">
+      <h4>${o.name || ""}</h4>
+      <div class="opp-value">${o.value || ""}</div>
+      <p>${o.description || ""}</p>
+    </div>
+  `).join("");
 }
     function renderLessons(list=[]){
 
@@ -788,21 +815,7 @@ el.innerHTML = list.map(n=>`
       `).join("");
     }
 
-    function renderOpportunities(list = []) {
-      const el = document.getElementById("opportunities");
-      if (!list.length) {
-        el.innerHTML = emptyState("No hay oportunidades cargadas");
-        return;
-      }
-
-      el.innerHTML = list.map(o => `
-        <div class="opportunity-card">
-          <h4>${o.name || ""}</h4>
-          <div class="opp-value">${o.value || ""}</div>
-          <p>${o.description || ""}</p>
-        </div>
-      `).join("");
-    }
+ 
 
     function renderComplexityBlock(id, data = []) {
       const el = document.getElementById(id);
@@ -843,8 +856,8 @@ renderBlockers(data.blockers || []);
 
 renderGoals(data.short_term_goals || []);
 
-renderOpportunities(data.opportunities_2025_not_awarded || []);
-
+renderOpportunities2025(data.opportunities_2025_not_awarded || []);
+    
 renderLessons(data.lessons_learned || []);
 
 renderNotes(data.notes || []);
