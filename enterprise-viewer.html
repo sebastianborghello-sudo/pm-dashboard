@@ -1,101 +1,448 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sanbai · Enterprise Control Tower</title>
   <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
     :root{
       --orange:#F76B1C;
-      --bg:#0B1020;
-      --card:#161B2D;
-      --text:#FFFFFF;
+      --orange2:#FF9A3D;
+      --ink:#111827;
+      --ink2:#1F2937;
       --muted:#94A3B8;
-      --border:rgba(255,255,255,0.08);
+      --bg:#0B1020;
+      --card:rgba(255,255,255,.05);
+      --line:rgba(255,255,255,.12);
+      --text:rgba(255,255,255,.94);
+      --text2:rgba(255,255,255,.72);
+      --success:#16A34A;
+      --warning:#F59E0B;
+      --danger:#DC2626;
+      --info:#2563EB;
+      --shadow:0 18px 55px rgba(0,0,0,.26);
+      --radius-xl:28px;
+      --radius-lg:18px;
+      --radius-md:14px;
     }
+
+    *{box-sizing:border-box;margin:0;padding:0}
     body{
-      font-family:'Segoe UI',system-ui,sans-serif;
-      background:var(--bg);
+      font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
       color:var(--text);
-      margin:0;
-      padding:20px;
-      line-height:1.5;
+      background:
+        radial-gradient(1200px 650px at 18% 8%, rgba(37,99,235,.18), transparent 55%),
+        radial-gradient(1100px 650px at 82% 0%, rgba(247,107,28,.18), transparent 55%),
+        radial-gradient(950px 550px at 68% 80%, rgba(22,163,74,.12), transparent 55%),
+        linear-gradient(180deg, #060915 0%, var(--bg) 30%, var(--bg) 100%);
+      padding:18px;
+      min-height:100vh;
     }
-    .container{max-width:1200px;margin:0 auto;}
-    .header{
-      display:flex;justify-content:space-between;align-items:center;
-      margin-bottom:30px;padding-bottom:20px;border-bottom:1px solid var(--border);
+
+    .container{width:min(1320px,100%);margin:0 auto}
+    .page{
+      border-radius:var(--radius-xl);
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.10);
+      box-shadow:0 28px 90px rgba(0,0,0,.38);
+      background:rgba(255,255,255,.04);
     }
-    .user-zone{display:flex;align-items:center;gap:15px;}
-    .btn-logout{
-      background:transparent;border:1px solid var(--muted);color:var(--muted);
-      padding:6px 12px;border-radius:8px;cursor:pointer;font-size:.8rem;
+
+    .topbar{
+      padding:22px 24px;
+      background:
+        radial-gradient(900px 380px at 10% 0%, rgba(37,99,235,.20), transparent 60%),
+        radial-gradient(900px 420px at 92% 0%, rgba(247,107,28,.22), transparent 62%),
+        linear-gradient(180deg, rgba(255,255,255,.06) 0%, rgba(255,255,255,.03) 100%);
+      border-bottom:1px solid rgba(255,255,255,.10);
     }
-    .btn-logout:hover{color:white;border-color:white;}
+
+    .topbar-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      flex-wrap:wrap;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width:280px;
+    }
+
+    .brand-title strong{
+      display:block;
+      font-weight:900;
+      letter-spacing:.2px;
+      font-size:14px;
+    }
+
+    .brand-title span{
+      font-size:12.5px;
+      color:rgba(255,255,255,.70);
+    }
+
+    .meta{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      align-items:center;
+    }
+
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:9px 12px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(255,255,255,.06);
+      font-size:12.5px;
+      color:rgba(255,255,255,.80);
+      white-space:nowrap;
+    }
+
+    .chip i{color:var(--orange)}
+    .logout-btn{
+      appearance:none;
+      border:1px solid rgba(255,255,255,.18);
+      background:transparent;
+      color:rgba(255,255,255,.84);
+      padding:9px 12px;
+      border-radius:12px;
+      font-weight:800;
+      cursor:pointer;
+    }
+
     .hero{
-      background:var(--card);
-      border:1px solid var(--border);
-      border-radius:18px;
-      padding:28px;
-      margin-bottom:24px;
+      margin-top:16px;
+      display:grid;
+      grid-template-columns:1.25fr .75fr;
+      gap:14px;
+      align-items:start;
     }
-    .hero h1{margin:0 0 8px;font-size:2rem;}
-    .hero p{margin:0;color:var(--muted);}
-    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;}
-    .card{
-      background:var(--card);
-      padding:24px;
+
+    .hero-main{
       border-radius:18px;
-      border:1px solid var(--border);
-      margin-bottom:24px;
-    }
-    .section-title{margin:0 0 18px;font-size:1.1rem;}
-    .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;}
-    .kpi-card{
-      background:rgba(255,255,255,0.02);
-      border:1px solid var(--border);
-      border-radius:14px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.05);
       padding:18px;
     }
-    .kpi-label{color:var(--muted);font-size:.85rem;margin-bottom:8px;}
-    .kpi-value{font-size:2rem;font-weight:800;color:var(--orange);}
-    .kpi-note{margin-top:6px;color:var(--muted);font-size:.85rem;}
-    .project-row{
-      display:flex;justify-content:space-between;align-items:center;
-      padding:16px 0;border-bottom:1px solid var(--border);cursor:pointer;
+
+    .hero-title{
+      font-size:34px;
+      line-height:1.12;
+      letter-spacing:-.5px;
+      font-weight:950;
     }
-    .project-row:last-child{border-bottom:none;}
-    .project-info h4{margin:0;}
-    .project-info p{margin:4px 0 0;color:var(--muted);font-size:.9rem;}
-    .project-value{text-align:right;font-weight:700;}
-    .bucket{
-      display:block;
-      color:var(--muted);
-      font-size:.8rem;
-      margin-top:4px;
+
+    .hero-title em{
+      font-style:normal;
+      color:var(--orange);
     }
-    .bullet-list{margin:0;padding-left:18px;color:var(--muted);}
-    .bullet-list li{margin-bottom:10px;}
-    .goal-card,.opportunity-card,.complexity-item{
-      border:1px solid var(--border);
+
+    .hero-sub{
+      margin-top:8px;
+      color:rgba(255,255,255,.72);
+      line-height:1.6;
+      font-size:14.5px;
+      max-width:78ch;
+    }
+
+    .hero-summary{
+      margin-top:14px;
+      color:rgba(255,255,255,.86);
+      line-height:1.6;
+      font-size:14px;
+      padding:12px 14px;
+      border:1px solid rgba(255,255,255,.12);
       border-radius:14px;
-      padding:16px;
-      background:rgba(255,255,255,0.02);
+      background:rgba(255,255,255,.04);
+    }
+
+    .hero-side{
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.05);
+      padding:14px;
+    }
+
+    .hero-side h3{
+      font-size:12px;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      color:rgba(255,255,255,.85);
       margin-bottom:12px;
     }
+
+    .mini-list{
+      display:grid;
+      gap:10px;
+    }
+
+    .mini-item{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      padding:10px 0;
+      border-bottom:1px solid rgba(255,255,255,.08);
+    }
+
+    .mini-item:last-child{border-bottom:none}
+    .mini-item span{color:rgba(255,255,255,.70);font-size:13px}
+    .mini-item strong{color:#fff;font-size:13px}
+
+    .content{
+      padding:18px 24px 24px;
+      display:grid;
+      gap:14px;
+    }
+
+    .card{
+      border-radius:var(--radius-lg);
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.05);
+      padding:16px;
+      position:relative;
+      overflow:hidden;
+    }
+
+    .card::before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      background:
+        radial-gradient(720px 260px at 12% 0%, rgba(37,99,235,.10), transparent 58%),
+        radial-gradient(720px 300px at 92% 0%, rgba(247,107,28,.10), transparent 62%);
+      opacity:.9;
+      pointer-events:none;
+    }
+
+    .card > *{position:relative;z-index:1}
+
+    .card h2{
+      font-size:12px;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      color:rgba(255,255,255,.85);
+      margin-bottom:12px;
+    }
+
+    .grid-3{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:12px;
+    }
+
+    .grid-2{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+    }
+
+    .kpi-card{
+      border-radius:18px;
+      padding:18px;
+      color:#fff;
+      min-height:120px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      box-shadow:0 12px 24px rgba(0,0,0,.12);
+    }
+
+    .kpi-card:nth-child(1){
+      background:linear-gradient(135deg,var(--orange) 0%, var(--orange2) 100%);
+    }
+
+    .kpi-card:nth-child(2){
+      background:linear-gradient(135deg,#1C1C1C 0%, #2F2F2F 100%);
+    }
+
+    .kpi-card:nth-child(3){
+      background:linear-gradient(135deg,#16A34A 0%, #22C55E 100%);
+    }
+
+    .kpi-label{font-size:12px;opacity:.92;font-weight:900;letter-spacing:.02em}
+    .kpi-value{font-size:28px;font-weight:950;letter-spacing:.2px}
+    .kpi-note{font-size:12px;opacity:.88}
+
+    .project-list{display:flex;flex-direction:column;gap:10px}
+    .project-row{
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.04);
+      border-radius:14px;
+      padding:14px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:14px;
+      cursor:pointer;
+      transition:transform .16s ease, border-color .16s ease, background .16s ease;
+    }
+
+    .project-row:hover{
+      transform:translateY(-1px);
+      border-color:rgba(255,255,255,.20);
+      background:rgba(255,255,255,.06);
+    }
+
+    .project-info h4{
+      font-size:15px;
+      font-weight:900;
+      margin-bottom:4px;
+    }
+
+    .project-info p{
+      color:rgba(255,255,255,.70);
+      font-size:13px;
+      line-height:1.4;
+    }
+
+    .project-side{
+      text-align:right;
+      min-width:150px;
+    }
+
+    .project-side .value{
+      font-size:14px;
+      font-weight:900;
+      color:#fff;
+    }
+
+    .bucket{
+      margin-top:6px;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.06);
+      font-size:12px;
+      color:rgba(255,255,255,.76);
+    }
+
+    .bucket::before{
+      content:"";
+      width:8px;height:8px;border-radius:50%;
+      background:var(--info);
+      box-shadow:0 0 0 3px rgba(37,99,235,.18);
+    }
+
+    .bullet-list{
+      list-style:none;
+      display:grid;
+      gap:10px;
+    }
+
+    .bullet-list li{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      color:rgba(255,255,255,.78);
+      font-size:13.5px;
+      line-height:1.5;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.04);
+    }
+
+    .bullet-list li::before{
+      content:"";
+      margin-top:6px;
+      width:8px;height:8px;border-radius:2px;
+      background:linear-gradient(135deg,var(--orange) 0%, var(--orange2) 100%);
+      box-shadow:0 0 0 4px rgba(247,107,28,.14);
+      flex:0 0 auto;
+    }
+
+    .goal-card,.opportunity-card{
+      padding:14px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.04);
+      margin-bottom:10px;
+    }
+
+    .goal-card h4,.opportunity-card h4{
+      font-size:14px;
+      font-weight:900;
+      margin-bottom:8px;
+      color:#fff;
+    }
+
+    .goal-card p,.opportunity-card p{
+      color:rgba(255,255,255,.72);
+      font-size:13px;
+      line-height:1.45;
+      margin:4px 0;
+    }
+
+    .opp-value{
+      font-size:22px;
+      font-weight:950;
+      color:var(--orange);
+      margin-bottom:6px;
+    }
+
+    .complexity-grid{
+      display:grid;
+      gap:10px;
+    }
+
     .complexity-item{
-      display:flex;justify-content:space-between;align-items:center;
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:center;
+      padding:12px 14px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.04);
     }
+
+    .complexity-item span{
+      color:rgba(255,255,255,.72);
+      font-size:13px;
+    }
+
+    .complexity-item strong{
+      color:#fff;
+      font-size:14px;
+    }
+
     .loading-overlay{
-      position:fixed;inset:0;background:var(--bg);
-      display:flex;flex-direction:column;align-items:center;justify-content:center;
-      z-index:100;transition:.5s;
+      position:fixed;
+      inset:0;
+      background:var(--bg);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      z-index:100;
+      transition:.5s;
     }
-    .hidden{opacity:0;pointer-events:none;}
-    @media (max-width:700px){
-      .header{flex-direction:column;gap:20px;text-align:center;}
+
+    .hidden{opacity:0;pointer-events:none}
+
+    .empty-state{
+      padding:20px;
+      border-radius:14px;
+      border:1px dashed rgba(255,255,255,.16);
+      color:rgba(255,255,255,.58);
+      font-size:13px;
+      background:rgba(255,255,255,.03);
+    }
+
+    @media (max-width: 1100px){
+      .hero,.grid-3,.grid-2{grid-template-columns:1fr}
     }
   </style>
 </head>
@@ -106,62 +453,81 @@
   </div>
 
   <div id="app" class="container hidden">
-    <header class="header">
-      <div>
-        <h2 style="margin:0;">Sanbai <span style="color:var(--orange);font-weight:300;">Control Tower</span></h2>
-      </div>
-      <div class="user-zone">
-        <button class="btn-logout" onclick="logout()">Cerrar Sesión</button>
-      </div>
-    </header>
+    <div class="page">
+      <header class="topbar">
+        <div class="topbar-row">
+          <div class="brand">
+            <div class="brand-title">
+              <strong>Sanbai Solutions</strong>
+              <span>Enterprise Portfolio · Executive View</span>
+            </div>
+          </div>
+          <div class="meta">
+            <div class="chip"><i class="fa-solid fa-shield-halved"></i><span>Vista segura</span></div>
+            <div class="chip"><i class="fa-solid fa-chart-line"></i><span>Control Tower</span></div>
+            <button class="logout-btn" onclick="logout()">Cerrar sesión</button>
+          </div>
+        </div>
 
-    <section class="hero">
-      <h1 id="heroTitle"></h1>
-      <p id="heroSubtitle"></p>
-      <p id="heroSummary" style="margin-top:12px;"></p>
-    </section>
+        <div class="hero">
+          <div class="hero-main">
+            <div class="hero-title" id="heroTitle">Enterprise <em>Dashboard</em></div>
+            <div class="hero-sub" id="heroSubtitle">Cargando subtítulo...</div>
+            <div class="hero-summary" id="heroSummary">Cargando resumen ejecutivo...</div>
+          </div>
 
-    <section class="card">
-      <h3 class="section-title">KPIs ejecutivos</h3>
-      <div id="kpiGrid" class="kpi-grid"></div>
-    </section>
+          <div class="hero-side">
+            <h3>Resumen rápido</h3>
+            <div class="mini-list" id="heroMiniList">
+              <div class="mini-item"><span>Estado</span><strong>Sincronizando</strong></div>
+              <div class="mini-item"><span>Fuente</span><strong>Airtable</strong></div>
+              <div class="mini-item"><span>Acceso</span><strong>JWT protegido</strong></div>
+            </div>
+          </div>
+        </div>
+      </header>
 
-    <section class="card">
-      <h3 class="section-title">Portafolio de proyectos</h3>
-      <div id="projectList"></div>
-    </section>
+      <main class="content">
+        <section class="grid-3" id="kpiGrid"></section>
 
-    <section class="grid">
-      <div class="card">
-        <h3 class="section-title">Bloqueadores</h3>
-        <ul id="blockers" class="bullet-list"></ul>
-      </div>
+        <section class="card">
+          <h2>Portafolio de proyectos</h2>
+          <div id="projectList" class="project-list"></div>
+        </section>
 
-      <div class="card">
-        <h3 class="section-title">Objetivos de corto plazo</h3>
-        <div id="goals"></div>
-      </div>
-    </section>
+        <section class="grid-2">
+          <section class="card">
+            <h2>Bloqueadores</h2>
+            <ul id="blockers" class="bullet-list"></ul>
+          </section>
 
-    <section class="card">
-      <h3 class="section-title">Oportunidades</h3>
-      <div id="opportunities"></div>
-    </section>
+          <section class="card">
+            <h2>Objetivos de corto plazo</h2>
+            <div id="goals"></div>
+          </section>
+        </section>
 
-    <section class="grid">
-      <div class="card">
-        <h3 class="section-title">Complejidad LAN</h3>
-        <div id="lanComplexity"></div>
-      </div>
-      <div class="card">
-        <h3 class="section-title">Complejidad SD-WAN</h3>
-        <div id="sdwanComplexity"></div>
-      </div>
-      <div class="card">
-        <h3 class="section-title">Complejidad Storage</h3>
-        <div id="storageComplexity"></div>
-      </div>
-    </section>
+        <section class="card">
+          <h2>Oportunidades</h2>
+          <div id="opportunities"></div>
+        </section>
+
+        <section class="grid-3">
+          <section class="card">
+            <h2>Complejidad LAN</h2>
+            <div id="lanComplexity" class="complexity-grid"></div>
+          </section>
+          <section class="card">
+            <h2>Complejidad SD-WAN</h2>
+            <div id="sdwanComplexity" class="complexity-grid"></div>
+          </section>
+          <section class="card">
+            <h2>Complejidad Storage</h2>
+            <div id="storageComplexity" class="complexity-grid"></div>
+          </section>
+        </section>
+      </main>
+    </div>
   </div>
 
   <script>
@@ -211,14 +577,23 @@
       }
     }
 
+    function emptyState(text = "Sin datos disponibles") {
+      return `<div class="empty-state">${text}</div>`;
+    }
+
     function renderHero(hero = {}) {
-      document.getElementById("heroTitle").innerText = hero.title || "";
-      document.getElementById("heroSubtitle").innerText = hero.subtitle || "";
-      document.getElementById("heroSummary").innerText = hero.summary || "";
+      document.getElementById("heroTitle").innerHTML = hero.title || 'Enterprise <em>Dashboard</em>';
+      document.getElementById("heroSubtitle").innerText = hero.subtitle || "Sin subtítulo configurado";
+      document.getElementById("heroSummary").innerText = hero.summary || "Sin resumen ejecutivo configurado";
     }
 
     function renderKpis(kpis = []) {
       const el = document.getElementById("kpiGrid");
+      if (!kpis.length) {
+        el.innerHTML = emptyState("No hay KPIs cargados en Global_Stats");
+        return;
+      }
+
       el.innerHTML = kpis.map(k => `
         <div class="kpi-card">
           <div class="kpi-label">${k.label || ""}</div>
@@ -230,14 +605,19 @@
 
     function renderProjects(projects = []) {
       const el = document.getElementById("projectList");
+      if (!projects.length) {
+        el.innerHTML = emptyState("No hay proyectos definidos en el portafolio");
+        return;
+      }
+
       el.innerHTML = projects.map(p => `
-        <div class="project-row" onclick="window.location.href='/project-viewer.html?key=${encodeURIComponent(p.link)}'">
+        <div class="project-row" onclick="window.location.href='/project-viewer.html?key=${encodeURIComponent(p.link || "")}'">
           <div class="project-info">
             <h4>${p.name || ""}</h4>
             <p>${p.status || ""}</p>
           </div>
-          <div class="project-value">
-            ${p.value || ""}
+          <div class="project-side">
+            <div class="value">${p.value || ""}</div>
             <span class="bucket">${p.bucket || ""}</span>
           </div>
         </div>
@@ -246,11 +626,20 @@
 
     function renderBlockers(items = []) {
       const el = document.getElementById("blockers");
+      if (!items.length) {
+        el.innerHTML = emptyState("No hay bloqueadores cargados");
+        return;
+      }
       el.innerHTML = items.map(i => `<li>${i}</li>`).join("");
     }
 
     function renderGoals(goals = []) {
       const el = document.getElementById("goals");
+      if (!goals.length) {
+        el.innerHTML = emptyState("No hay objetivos de corto plazo");
+        return;
+      }
+
       el.innerHTML = goals.map(g => `
         <div class="goal-card">
           <h4>${g.decision || ""}</h4>
@@ -262,10 +651,15 @@
 
     function renderOpportunities(list = []) {
       const el = document.getElementById("opportunities");
+      if (!list.length) {
+        el.innerHTML = emptyState("No hay oportunidades cargadas");
+        return;
+      }
+
       el.innerHTML = list.map(o => `
         <div class="opportunity-card">
           <h4>${o.name || ""}</h4>
-          <div class="kpi-value" style="font-size:1.4rem">${o.value || ""}</div>
+          <div class="opp-value">${o.value || ""}</div>
           <p>${o.description || ""}</p>
         </div>
       `).join("");
@@ -273,6 +667,11 @@
 
     function renderComplexityBlock(id, data = []) {
       const el = document.getElementById(id);
+      if (!data.length) {
+        el.innerHTML = emptyState("Sin datos");
+        return;
+      }
+
       el.innerHTML = data.map(d => `
         <div class="complexity-item">
           <span>${d.label || ""}</span>
@@ -291,13 +690,13 @@
       document.getElementById('loader').classList.add('hidden');
       document.getElementById('app').classList.remove('hidden');
 
-      renderHero(data.hero);
-      renderKpis(data.kpis);
-      renderProjects(data.projects);
-      renderBlockers(data.blockers);
-      renderGoals(data.short_term_goals);
-      renderOpportunities(data.opportunities);
-      renderComplexity(data.complexity);
+      renderHero(data.hero || {});
+      renderKpis(data.kpis || []);
+      renderProjects(data.projects || []);
+      renderBlockers(data.blockers || []);
+      renderGoals(data.short_term_goals || []);
+      renderOpportunities(data.opportunities || []);
+      renderComplexity(data.complexity || {});
     }
 
     function logout() {
