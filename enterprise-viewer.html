@@ -474,6 +474,7 @@
             <div class="hero-title" id="heroTitle">Enterprise <em>Dashboard</em></div>
             <div class="hero-sub" id="heroSubtitle">Cargando subtítulo...</div>
             <div class="hero-summary" id="heroSummary">Cargando resumen ejecutivo...</div>
+            <ul id="heroObjectives" class="bullet-list"></ul>
           </div>
 
           <div class="hero-side">
@@ -524,7 +525,29 @@
           <section class="card">
             <h2>Complejidad Storage</h2>
             <div id="storageComplexity" class="complexity-grid"></div>
+          
           </section>
+          <section class="card">
+<h2>Forecast 2026</h2>
+<div id="forecastBars"></div>
+</section>
+          <section class="card">
+<h2>Portfolio 2026</h2>
+<div id="portfolio"></div>
+</section>
+          <section class="card">
+<h2>Oportunidades 2025 (no adjudicadas)</h2>
+<div id="opportunities2025"></div>
+</section>
+          <section class="card">
+<h2>Aprendizajes</h2>
+<ul id="lessons" class="bullet-list"></ul>
+</section>
+          <section class="card">
+<h2>Notas</h2>
+<ul id="notes" class="bullet-list"></ul>
+</section>
+          
         </section>
       </main>
     </div>
@@ -586,6 +609,54 @@
       document.getElementById("heroSubtitle").innerText = hero.subtitle || "Sin subtítulo configurado";
       document.getElementById("heroSummary").innerText = hero.summary || "Sin resumen ejecutivo configurado";
     }
+    function renderHeroObjectives(items = []){
+
+  const el = document.getElementById("heroObjectives");
+
+  if(!items.length){
+    el.innerHTML = "";
+    return;
+  }
+
+  el.innerHTML = items.map(i=>`
+    <li>${i}</li>
+  `).join("");
+
+}
+    function renderForecastBars(bars = []){
+
+  const el = document.getElementById("forecastBars");
+
+  if(!bars.length){
+    el.innerHTML = "<p class='muted'>Sin datos</p>";
+    return;
+  }
+
+  el.innerHTML = bars.map(b=>`
+
+  <div class="forecast-row">
+
+      <div class="forecast-label">
+        ${b.name}
+        <span>${b.value}</span>
+      </div>
+
+      <div class="forecast-bar">
+        <div class="forecast-fill"
+             style="width:${b.share}%">
+        </div>
+      </div>
+
+      <div class="forecast-share">
+        ${b.share}%
+      </div>
+
+  </div>
+
+  `).join("");
+
+}
+    
 
     function renderKpis(kpis = []) {
       const el = document.getElementById("kpiGrid");
@@ -603,26 +674,94 @@
       `).join("");
     }
 
-    function renderProjects(projects = []) {
-      const el = document.getElementById("projectList");
-      if (!projects.length) {
-        el.innerHTML = emptyState("No hay proyectos definidos en el portafolio");
-        return;
-      }
+function renderPortfolio(projects=[]){
 
-      el.innerHTML = projects.map(p => `
-        <div class="project-row" onclick="window.location.href='/project-viewer.html?key=${encodeURIComponent(p.link || "")}'">
-          <div class="project-info">
-            <h4>${p.name || ""}</h4>
-            <p>${p.status || ""}</p>
-          </div>
-          <div class="project-side">
-            <div class="value">${p.value || ""}</div>
-            <span class="bucket">${p.bucket || ""}</span>
-          </div>
-        </div>
-      `).join("");
-    }
+const el = document.getElementById("portfolio");
+
+if(!projects.length){
+  el.innerHTML="<p class='muted'>Sin proyectos</p>";
+  return;
+}
+
+el.innerHTML = projects.map(p=>`
+
+<div class="project-row"
+onclick="window.location.href='/project-viewer.html?key=${p.link}'">
+
+<div class="project-info">
+
+<h4>${p.name}</h4>
+
+<p>${p.status}</p>
+
+</div>
+
+<div class="project-value">
+
+${p.value}
+
+<span class="bucket">${p.bucket}</span>
+
+</div>
+
+</div>
+
+`).join("");
+
+}
+
+    function renderOpportunities(list=[]){
+
+const el = document.getElementById("opportunities2025");
+
+if(!list.length){
+  el.innerHTML="";
+  return;
+}
+
+el.innerHTML = list.map(o=>`
+
+<div class="opportunity-card">
+
+<h4>${o.name}</h4>
+
+<div class="opp-value">${o.value}</div>
+
+<p>${o.description}</p>
+
+</div>
+
+`).join("");
+
+}
+    function renderLessons(list=[]){
+
+const el = document.getElementById("lessons");
+
+if(!list.length){
+  el.innerHTML="";
+  return;
+}
+
+el.innerHTML = list.map(l=>`
+<li>${l}</li>
+`).join("");
+
+}
+    function renderNotes(list=[]){
+
+const el = document.getElementById("notes");
+
+if(!list.length){
+  el.innerHTML="";
+  return;
+}
+
+el.innerHTML = list.map(n=>`
+<li>${n}</li>
+`).join("");
+
+}
 
     function renderBlockers(items = []) {
       const el = document.getElementById("blockers");
@@ -686,18 +825,31 @@
       renderComplexityBlock("storageComplexity", c.storage || []);
     }
 
-    function render(data) {
-      document.getElementById('loader').classList.add('hidden');
-      document.getElementById('app').classList.remove('hidden');
+  function render(data){
 
-      renderHero(data.hero || {});
-      renderKpis(data.kpis || []);
-      renderProjects(data.projects || []);
-      renderBlockers(data.blockers || []);
-      renderGoals(data.short_term_goals || []);
-      renderOpportunities(data.opportunities || []);
-      renderComplexity(data.complexity || {});
-    }
+document.getElementById('loader').classList.add('hidden');
+document.getElementById('app').classList.remove('hidden');
+
+renderHero(data.hero || {});
+renderHeroObjectives(data.hero_objectives || []);
+
+renderKpis(data.forecast_kpis || []);
+
+renderForecastBars(data.forecast_bars || []);
+
+renderPortfolio(data.portfolio_2026 || []);
+
+renderBlockers(data.blockers || []);
+
+renderGoals(data.short_term_goals || []);
+
+renderOpportunities(data.opportunities_2025_not_awarded || []);
+
+renderLessons(data.lessons_learned || []);
+
+renderNotes(data.notes || []);
+
+}
 
     function logout() {
       sessionStorage.removeItem("identity_prompt_open");
