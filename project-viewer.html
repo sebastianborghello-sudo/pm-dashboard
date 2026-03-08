@@ -1,251 +1,538 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Cargando... | Sanbai Dashboard</title>
   <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
-    :root {
-      --orange: #F76B1C; --ink: #1C1C1C; --bg: #F5F6F8; --card: #FFFFFF;
-      --success: #16A34A; --muted: #667085;
+    :root{
+      --orange:#F76B1C;
+      --orange2:#FF9A3D;
+      --ink:#111827;
+      --ink2:#1F2937;
+      --muted:#667085;
+      --bg:#F5F6F8;
+      --card:#FFFFFF;
+      --line:#E6E8EC;
+      --success:#16A34A;
+      --warning:#F59E0B;
+      --shadow:0 10px 26px rgba(0,0,0,.08);
+      --radius:16px;
     }
-    body { font-family: ui-sans-serif, system-ui, sans-serif; background: var(--bg); color: var(--ink); margin: 0; padding: 20px; }
-    .container { max-width: 1100px; margin: 0 auto; }
-    .card { background: var(--card); padding: 24px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
-    header { display: flex; justify-content: space-between; align-items: center; }
-    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
-    .kpi-card { background: #f9fafb; padding: 15px; border-radius: 12px; border-left: 4px solid var(--orange); }
-    .kpi-label { font-size: 0.85rem; color: var(--muted); font-weight: 600; }
-    .kpi-value { font-size: 1.25rem; font-weight: 800; color: var(--ink); }
-    .scope-list { list-style: none; padding: 0; }
-    .scope-list li { padding: 8px 0; border-bottom: 1px solid #edf2f7; display: flex; gap: 10px; }
-    .loading-state { text-align: center; padding: 100px; }
-    .hidden { display: none; }
-    @media print { .no-print { display: none; } body { background: white; padding: 0; } .card { box-shadow: none; border: 1px solid #eee; } }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      background:var(--bg);
+      color:var(--ink);
+      padding:20px;
+    }
+
+    .container{max-width:1200px;margin:0 auto}
+    .hidden{display:none}
+
+    .loading-state{
+      min-height:80vh;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+    }
+
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:16px;
+      margin-bottom:18px;
+      flex-wrap:wrap;
+    }
+
+    .btn{
+      appearance:none;
+      border:1px solid rgba(0,0,0,.08);
+      background:#fff;
+      color:var(--ink);
+      padding:10px 12px;
+      border-radius:12px;
+      font-weight:800;
+      font-size:13px;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      cursor:pointer;
+      box-shadow:0 8px 20px rgba(0,0,0,.06);
+    }
+
+    .btn-dark{
+      background:var(--ink);
+      color:#fff;
+    }
+
+    .hero{
+      background:var(--card);
+      border-radius:20px;
+      box-shadow:var(--shadow);
+      border-left:7px solid var(--orange);
+      padding:22px;
+      margin-bottom:18px;
+    }
+
+    .hero-top{
+      display:flex;
+      justify-content:space-between;
+      gap:14px;
+      align-items:flex-start;
+      flex-wrap:wrap;
+    }
+
+    .hero h1{
+      font-size:30px;
+      line-height:1.12;
+      font-weight:950;
+      margin-bottom:8px;
+    }
+
+    .hero-sub{
+      color:var(--muted);
+      line-height:1.6;
+      font-size:14.5px;
+      max-width:850px;
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 12px;
+      border-radius:999px;
+      font-weight:800;
+      font-size:12px;
+      background:#fff2e8;
+      color:#7a2e00;
+      border:1px solid rgba(247,107,28,.25);
+      white-space:nowrap;
+    }
+
+    .meta-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+      gap:12px;
+      margin-top:18px;
+    }
+
+    .meta-card{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:14px;
+      background:#fcfcfd;
+    }
+
+    .meta-label{
+      font-size:11px;
+      letter-spacing:.7px;
+      text-transform:uppercase;
+      color:var(--muted);
+      font-weight:800;
+    }
+
+    .meta-value{
+      margin-top:6px;
+      font-size:15px;
+      font-weight:900;
+      color:var(--ink);
+    }
+
+    .meta-sub{
+      margin-top:6px;
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.4;
+    }
+
+    .card{
+      background:var(--card);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:18px;
+      margin-bottom:18px;
+      border:1px solid #f0f0f0;
+    }
+
+    .section-title{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-size:16px;
+      font-weight:950;
+      margin-bottom:14px;
+    }
+
+    .section-title i{color:var(--orange)}
+
+    .kpi-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:12px;
+    }
+
+    .kpi-card{
+      border-radius:14px;
+      padding:16px;
+      color:#fff;
+      font-weight:900;
+      min-height:96px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      box-shadow:0 10px 22px rgba(0,0,0,.10);
+    }
+
+    .kpi-card:nth-child(4n+1){
+      background:linear-gradient(135deg,var(--orange) 0%, var(--orange2) 100%);
+    }
+    .kpi-card:nth-child(4n+2){
+      background:linear-gradient(135deg,#1C1C1C 0%, #2F2F2F 100%);
+    }
+    .kpi-card:nth-child(4n+3){
+      background:linear-gradient(135deg,#16A34A 0%, #22C55E 100%);
+    }
+    .kpi-card:nth-child(4n+4){
+      background:linear-gradient(135deg,#F59E0B 0%, #FBBF24 100%);
+    }
+
+    .kpi-label{font-size:12px;opacity:.95}
+    .kpi-value{font-size:24px;letter-spacing:.2px}
+
+    .viewer-section{
+      margin-bottom:18px;
+    }
+    .viewer-section:last-child{margin-bottom:0}
+
+    .viewer-section h2{
+      font-size:18px;
+      margin-bottom:12px;
+      font-weight:950;
+      color:var(--ink);
+    }
+
+    .bullet-list{
+      list-style:none;
+      display:grid;
+      gap:10px;
+    }
+
+    .bullet-list li{
+      padding:12px 14px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:#fcfcfd;
+    }
+
+    .bullet-list li strong{
+      display:block;
+      margin-bottom:4px;
+      color:var(--ink);
+    }
+
+    .bullet-list li p{
+      color:#475467;
+      line-height:1.5;
+      font-size:14px;
+    }
+
+    .viewer-table{
+      width:100%;
+      border-collapse:collapse;
+      overflow:hidden;
+      border-radius:12px;
+      border:1px solid var(--line);
+    }
+
+    .viewer-table th,
+    .viewer-table td{
+      padding:11px 12px;
+      border-bottom:1px solid var(--line);
+      font-size:13px;
+      text-align:left;
+      vertical-align:top;
+    }
+
+    .viewer-table th{
+      background:#f9fafb;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.05em;
+      font-size:11.5px;
+      font-weight:900;
+    }
+
+    .viewer-table tr:last-child td{border-bottom:none}
+
+    .note-box{
+      border-left:4px solid var(--orange);
+      background:#fff7ed;
+      border-radius:12px;
+      padding:14px;
+      color:#7c2d12;
+      line-height:1.55;
+    }
+
+    .empty-state{
+      padding:18px;
+      border:1px dashed #d0d5dd;
+      border-radius:14px;
+      color:var(--muted);
+      background:#fafafa;
+      font-size:13px;
+    }
+
+    @media print{
+      .no-print{display:none!important}
+      body{background:#fff;padding:0}
+      .card,.hero{box-shadow:none;border:1px solid #e5e7eb}
+    }
   </style>
 </head>
 <body>
   <div id="loader" class="loading-state">
     <i class="fas fa-circle-notch fa-spin fa-3x" style="color: var(--orange)"></i>
-    <p>Cargando información segura de Sanbai...</p>
+    <p style="margin-top:16px;">Cargando información segura de Sanbai...</p>
   </div>
 
   <div id="viewer" class="container hidden">
-    <header class="card">
-      <div>
-        <h1 id="pName" style="margin:0"></h1>
-        <p id="pSubtitle" style="color:var(--muted); margin:5px 0 0"></p>
-      </div>
-      <button onclick="window.print()" class="no-print" style="padding:10px 20px; border-radius:8px; border:none; background:var(--ink); color:white; cursor:pointer;">
-        <i class="fas fa-file-pdf"></i> Exportar
+    <div class="topbar no-print">
+      <button class="btn" onclick="history.back()">
+        <i class="fas fa-arrow-left"></i> Volver
       </button>
-    </header>
-
-    <div class="card">
-      <h3><i class="fas fa-flag" style="color:var(--orange)"></i> Objetivo del Proyecto</h3>
-      <p id="pObjective" style="line-height:1.6"></p>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button onclick="window.print()" class="btn btn-dark">
+          <i class="fas fa-file-pdf"></i> Exportar
+        </button>
+        <button onclick="logout()" class="btn">
+          <i class="fas fa-right-from-bracket"></i> Cerrar sesión
+        </button>
+      </div>
     </div>
 
-    <div class="card">
-      <h3><i class="fas fa-chart-line" style="color:var(--orange)"></i> Indicadores Clave (KPIs)</h3>
-      <div id="pKpis" class="kpi-grid"></div>
-    </div>
+    <section class="hero">
+      <div class="hero-top">
+        <div>
+          <h1 id="pName"></h1>
+          <div id="pSubtitle" class="hero-sub"></div>
+        </div>
+        <div id="pBadgeWrap" class="badge hidden">
+          <i class="fas fa-shield-halved"></i>
+          <span id="pBadge"></span>
+        </div>
+      </div>
+      <div id="metaGrid" class="meta-grid"></div>
+    </section>
 
-    <div class="card">
-      <h3><i class="fas fa-list-check" style="color:var(--orange)"></i> Alcance y Entregables</h3>
-      <ul id="pScope" class="scope-list"></ul>
-    </div>
+    <section class="card">
+      <div class="section-title">
+        <i class="fas fa-chart-line"></i>
+        <span>Indicadores clave</span>
+      </div>
+      <div id="kpiGrid" class="kpi-grid"></div>
+    </section>
+
+    <section class="card">
+      <div class="section-title">
+        <i class="fas fa-layer-group"></i>
+        <span>Detalle ejecutivo</span>
+      </div>
+      <div id="sections"></div>
+    </section>
   </div>
 
-<script>
-  let booting = false;
+  <script>
+    let booting = false;
 
-  async function getCurrentUserOrPrompt() {
-    const user = netlifyIdentity.currentUser();
-    if (user) return user;
+    async function getCurrentUserOrPrompt() {
+      const user = netlifyIdentity.currentUser();
+      if (user) return user;
 
-    if (!sessionStorage.getItem("identity_prompt_open")) {
-      sessionStorage.setItem("identity_prompt_open", "1");
-      netlifyIdentity.open();
+      if (!sessionStorage.getItem("identity_prompt_open")) {
+        sessionStorage.setItem("identity_prompt_open", "1");
+        netlifyIdentity.open();
+      }
+      throw new Error("LOGIN_REQUIRED");
     }
-    throw new Error("LOGIN_REQUIRED");
-  }
 
-  async function bootstrap() {
-    if (booting) return;
-    booting = true;
+    async function bootstrap() {
+      if (booting) return;
+      booting = true;
 
-    try {
-      const key = new URLSearchParams(window.location.search).get("key");
-      if (!key) throw new Error("Falta el parámetro key");
+      try {
+        const key = new URLSearchParams(window.location.search).get("key");
+        if (!key) throw new Error("Falta el parámetro key");
 
-      const user = await getCurrentUserOrPrompt();
-      const token = await user.jwt();
+        const user = await getCurrentUserOrPrompt();
+        const token = await user.jwt();
 
-      const res = await fetch(`/.netlify/functions/presentation-data?type=project&key=${encodeURIComponent(key)}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+        const res = await fetch(`/.netlify/functions/presentation-data?type=project&key=${encodeURIComponent(key)}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
 
-      const data = await res.json();
+        const data = await res.json();
 
-      if (!res.ok || !data.ok) {
-        throw new Error(data?.error || "Proyecto no encontrado");
+        if (!res.ok || !data.ok) {
+          throw new Error(data?.error || "Proyecto no encontrado");
+        }
+
+        render(data);
+      } catch (e) {
+        if (e.message === "LOGIN_REQUIRED") return;
+
+        console.error(e);
+        document.getElementById("loader").innerHTML = `
+          <i class="fas fa-exclamation-triangle fa-2x" style="color: var(--orange)"></i>
+          <p style="margin-top:15px">${e.message}</p>
+        `;
+      } finally {
+        booting = false;
+      }
+    }
+
+    function emptyState(text = "Sin datos disponibles") {
+      return `<div class="empty-state">${text}</div>`;
+    }
+
+    function renderHero(hero = {}, fallbackName = "", fallbackSubtitle = "") {
+      document.title = hero.title || fallbackName || "Proyecto";
+      document.getElementById("pName").innerText = hero.title || fallbackName || "";
+      document.getElementById("pSubtitle").innerText = hero.subtitle || fallbackSubtitle || "";
+
+      const badgeWrap = document.getElementById("pBadgeWrap");
+      const badge = document.getElementById("pBadge");
+
+      if (hero.badge) {
+        badge.innerText = hero.badge;
+        badgeWrap.classList.remove("hidden");
+      } else {
+        badgeWrap.classList.add("hidden");
+      }
+    }
+
+    function renderMeta(meta = []) {
+      const el = document.getElementById("metaGrid");
+      if (!meta.length) {
+        el.innerHTML = emptyState("No hay metadatos ejecutivos cargados");
+        return;
       }
 
-      render(data);
-    } catch (e) {
-      if (e.message === "LOGIN_REQUIRED") return;
-
-      console.error(e);
-      document.getElementById("loader").innerHTML = `
-        <i class="fas fa-exclamation-triangle fa-2x" style="color: var(--orange)"></i>
-        <p style="margin-top:15px">${e.message}</p>
-      `;
-    } finally {
-      booting = false;
+      el.innerHTML = meta.map(m => `
+        <div class="meta-card">
+          <div class="meta-label">${m.label || ""}</div>
+          <div class="meta-value">${m.value || ""}</div>
+          ${m.sub ? `<div class="meta-sub">${m.sub}</div>` : ""}
+        </div>
+      `).join("");
     }
-  }
 
-  function render(d) {
-    document.getElementById("loader").classList.add("hidden");
-    document.getElementById("viewer").classList.remove("hidden");
+    function renderKpis(kpis = []) {
+      const el = document.getElementById("kpiGrid");
+      if (!kpis.length) {
+        el.innerHTML = emptyState("No hay KPIs cargados");
+        return;
+      }
 
-    document.title = d.name || "Proyecto";
-    document.getElementById("pName").innerText = d.name || "";
-    document.getElementById("pSubtitle").innerText = d.subtitle || "";
-    document.getElementById("pObjective").innerText = d.objective || "";
+      el.innerHTML = kpis.map(k => `
+        <div class="kpi-card">
+          <div class="kpi-label">${k.label || ""}</div>
+          <div class="kpi-value">${k.value || ""}</div>
+        </div>
+      `).join("");
+    }
 
-    document.getElementById("pKpis").innerHTML = (d.kpis || []).map(k => `
-      <div class="kpi-card">
-        <div class="kpi-label">${k.label || ""}</div>
-        <div class="kpi-value">${k.value || ""}</div>
-      </div>
-    `).join("");
+    function renderSections(sections = []) {
+      const container = document.getElementById("sections");
+      if (!sections.length) {
+        container.innerHTML = emptyState("No hay secciones configuradas");
+        return;
+      }
 
-    document.getElementById("pScope").innerHTML = (d.scope || []).map(s => `
-      <li><i class="fas fa-check-circle" style="color:var(--success)"></i> ${s}</li>
-    `).join("");
-  }
+      container.innerHTML = sections.map(section => {
+        if (section.type === "bullets") {
+          return `
+            <section class="viewer-section">
+              <h2>${section.title || ""}</h2>
+              <ul class="bullet-list">
+                ${(section.items || []).map(i => `
+                  <li>
+                    <strong>${i.title || ""}</strong>
+                    <p>${i.text || ""}</p>
+                  </li>
+                `).join("")}
+              </ul>
+            </section>
+          `;
+        }
 
-  netlifyIdentity.on("init", () => {
-    bootstrap();
-    renderHero(data.hero);
-renderMeta(data.meta);
-renderKpis(data.kpis);
-renderSections(data.sections);
-  });
+        if (section.type === "table") {
+          return `
+            <section class="viewer-section">
+              <h2>${section.title || ""}</h2>
+              <table class="viewer-table">
+                <thead>
+                  <tr>${(section.columns || []).map(c => `<th>${c}</th>`).join("")}</tr>
+                </thead>
+                <tbody>
+                  ${(section.rows || []).map(r => `
+                    <tr>${r.map(c => `<td>${c}</td>`).join("")}</tr>
+                  `).join("")}
+                </tbody>
+              </table>
+            </section>
+          `;
+        }
 
-  netlifyIdentity.on("login", () => {
-    sessionStorage.removeItem("identity_prompt_open");
-    netlifyIdentity.close();
-    bootstrap();
-  });
+        if (section.type === "note") {
+          return `
+            <section class="viewer-section">
+              <h2>${section.title || ""}</h2>
+              <div class="note-box">${section.text || ""}</div>
+            </section>
+          `;
+        }
 
-  netlifyIdentity.on("logout", () => {
-    sessionStorage.removeItem("identity_prompt_open");
-    location.href = "/login.html";
-  });
+        return "";
+      }).join("");
+    }
 
-  function renderHero(hero) {
+    function render(data) {
+      document.getElementById("loader").classList.add("hidden");
+      document.getElementById("viewer").classList.remove("hidden");
 
-document.getElementById("pName").innerText = hero?.title || "";
-document.getElementById("pSubtitle").innerText = hero?.subtitle || "";
+      renderHero(data.hero || {}, data.name || "", data.subtitle || "");
+      renderMeta(data.meta || []);
+      renderKpis(data.kpis || []);
+      renderSections(data.sections || []);
+    }
 
-if(hero?.badge){
-document.getElementById("pBadge").innerText = hero.badge;
-}
+    function logout() {
+      sessionStorage.removeItem("identity_prompt_open");
+      netlifyIdentity.logout();
+    }
 
-}
+    netlifyIdentity.on("init", () => {
+      bootstrap();
+    });
 
-  function renderMeta(meta){
+    netlifyIdentity.on("login", () => {
+      sessionStorage.removeItem("identity_prompt_open");
+      netlifyIdentity.close();
+      bootstrap();
+    });
 
-const el = document.getElementById("metaGrid");
-
-el.innerHTML = meta.map(m=>`
-<div class="meta-card">
-<div class="meta-label">${m.label}</div>
-<div class="meta-value">${m.value}</div>
-${m.sub ? `<div class="meta-sub">${m.sub}</div>`:''}
-</div>
-`).join('');
-
-}
-
-  function renderKpis(kpis){
-
-const el = document.getElementById("kpiGrid");
-
-el.innerHTML = kpis.map(k=>`
-<div class="kpi-card">
-<div class="kpi-label">${k.label}</div>
-<div class="kpi-value">${k.value}</div>
-</div>
-`).join('');
-
-}
-  function renderSections(sections){
-
-const container = document.getElementById("sections");
-
-container.innerHTML = sections.map(section=>{
-
-if(section.type==="bullets"){
-
-return `
-<section class="viewer-section">
-<h2>${section.title}</h2>
-
-<ul class="bullet-list">
-${section.items.map(i=>`
-<li>
-<strong>${i.title}</strong>
-<p>${i.text}</p>
-</li>
-`).join("")}
-</ul>
-
-</section>
-`;
-
-}
-
-if(section.type==="table"){
-
-return `
-<section class="viewer-section">
-
-<h2>${section.title}</h2>
-
-<table class="viewer-table">
-
-<thead>
-<tr>
-${section.columns.map(c=>`<th>${c}</th>`).join("")}
-</tr>
-</thead>
-
-<tbody>
-${section.rows.map(r=>`
-<tr>
-${r.map(c=>`<td>${c}</td>`).join("")}
-</tr>
-`).join("")}
-</tbody>
-
-</table>
-
-</section>
-`;
-
-}
-
-}).join("");
-
-}
-
-  
-</script>
+    netlifyIdentity.on("logout", () => {
+      sessionStorage.removeItem("identity_prompt_open");
+      location.href = "/login.html";
+    });
+  </script>
 </body>
 </html>
