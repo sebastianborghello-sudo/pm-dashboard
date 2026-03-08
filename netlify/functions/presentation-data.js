@@ -1,11 +1,15 @@
 const Airtable = require("./airtable");
 
-function authError(statusCode, message) {
+function json(statusCode, bodyObj) {
   return {
     statusCode,
     headers: { "Content-Type": "application/json; charset=utf-8" },
-    body: JSON.stringify({ ok: false, error: message }),
+    body: JSON.stringify(bodyObj),
   };
+}
+
+function authError(statusCode, message) {
+  return json(statusCode, { ok: false, error: message });
 }
 
 function requireRead(context) {
@@ -26,31 +30,37 @@ exports.handler = async (event, context) => {
   const key = qs.key;
 
   try {
+    // ==========================
+    // ENTERPRISE VIEWER
+    // Lee desde Enterprise_Config.Global_Stats
+    // ==========================
     if (type === "enterprise") {
-      const { projectsRec } = await Airtable.buildProjectMaps();
+      const url = Airtable.baseApi("Enterprise_Config");
+      const res = await Airtable.airtableReq("GET", url);
+      const record = res.records?.[0];
 
-      const projects = projectsRec
-        .map(r => ({
-          name: r.fields?.["Name"] || "Sin nombre",
-          key: r.fields?.["Project Key"] || "",
-          subtitle: r.fields?.["Subtitle"] || ""
-        }))
-        .filter(p => p.key);
+      if (!record) {
+        return authError(404, "Enterprise config not found");
+      }
 
-      return {
-        statusCode: 200,
-        headers: { "Content-Type": "application/json; charset=utf-8" },
-        body: JSON.stringify({
-          ok: true,
-          stats: {
-            total: projects.length,
-            margin: 24.2
-          },
-          projects
-        })
-      };
+      let data = {};
+      try {
+        data = JSON.parse(record.fields?.["Global_Stats"] || "{}");
+      } catch (e) {
+        console.error("Global_Stats JSON inválido:", e);
+        return authError(500, "Global_Stats JSON inválido");
+      }
+
+      return json(200, {
+        ok: true,
+        ...data
+      });
     }
 
+    // ==========================
+    // PROJECT VIEWER
+    // Lee desde Projects.Executive_Data
+    // ==========================
     if (type === "project") {
       if (!key) return authError(400, "Missing project key");
 
@@ -68,18 +78,12 @@ exports.handler = async (event, context) => {
         console.error("Executive_Data JSON inválido:", e);
       }
 
-      return {
-        statusCode: 200,
-        headers: { "Content-Type": "application/json; charset=utf-8" },
-        body: JSON.stringify({
-          ok: true,
-          name: record.fields?.["Name"] || "",
-          subtitle: record.fields?.["Subtitle"] || "",
-          objective: executiveData.objective || "",
-          kpis: Array.isArray(executiveData.kpis) ? executiveData.kpis : [],
-          scope: Array.isArray(executiveData.scope) ? executiveData.scope : []
-        })
-      };
+      return json(200, {
+        ok: true,
+        name: record.fields?.["Name"] || "",
+        subtitle: record.fields?.["Subtitle"] || "",
+        ...executiveData
+      });
     }
 
     return authError(400, "Invalid type");
