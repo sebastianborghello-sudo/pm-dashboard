@@ -33,14 +33,21 @@
     .container{max-width:1200px;margin:0 auto}
     .hidden{display:none}
 
-    .loading-state{
-      min-height:80vh;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      justify-content:center;
-      text-align:center;
-    }
+   .loading-state{
+  position:fixed;
+  inset:0;
+  background:var(--bg);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  z-index:9999;
+}
+
+.hidden{
+  display:none !important;
+}
 
     .topbar{
       display:flex;
@@ -303,8 +310,8 @@
     <p style="margin-top:16px;">Cargando información segura de Sanbai...</p>
   </div>
 
-  <div id="viewer" class="container hidden">
-    <div class="topbar no-print">
+<div id="viewer" class="container hidden" style="display:none;">
+  <div class="topbar no-print">
       <button class="btn" onclick="history.back()">
         <i class="fas fa-arrow-left"></i> Volver
       </button>
@@ -504,15 +511,21 @@
       }).join("");
     }
 
-    function render(data) {
-      document.getElementById("loader").classList.add("hidden");
-      document.getElementById("viewer").classList.remove("hidden");
+   function render(data) {
+  const loader = document.getElementById("loader");
+  const viewer = document.getElementById("viewer");
 
-      renderHero(data.hero || {}, data.name || "", data.subtitle || "");
-      renderMeta(data.meta || []);
-      renderKpis(data.kpis || []);
-      renderSections(data.sections || []);
-    }
+  loader.classList.add("hidden");
+  loader.style.display = "none";
+
+  viewer.classList.remove("hidden");
+  viewer.style.display = "block";
+
+  renderHero(data.hero || {}, data.name || "", data.subtitle || "");
+  renderMeta(data.meta || []);
+  renderKpis(data.kpis || []);
+  renderSections(data.sections || []);
+}
 
     function logout() {
       sessionStorage.removeItem("identity_prompt_open");
