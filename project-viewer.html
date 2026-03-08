@@ -457,59 +457,186 @@
     }
 
     function renderSections(sections = []) {
-      const container = document.getElementById("sections");
-      if (!sections.length) {
-        container.innerHTML = emptyState("No hay secciones configuradas");
-        return;
-      }
 
-      container.innerHTML = sections.map(section => {
-        if (section.type === "bullets") {
-          return `
-            <section class="viewer-section">
-              <h2>${section.title || ""}</h2>
-              <ul class="bullet-list">
-                ${(section.items || []).map(i => `
-                  <li>
-                    <strong>${i.title || ""}</strong>
-                    <p>${i.text || ""}</p>
-                  </li>
-                `).join("")}
-              </ul>
-            </section>
-          `;
-        }
+  const container = document.getElementById("sections");
 
-        if (section.type === "table") {
-          return `
-            <section class="viewer-section">
-              <h2>${section.title || ""}</h2>
-              <table class="viewer-table">
-                <thead>
-                  <tr>${(section.columns || []).map(c => `<th>${c}</th>`).join("")}</tr>
-                </thead>
-                <tbody>
-                  ${(section.rows || []).map(r => `
-                    <tr>${r.map(c => `<td>${c}</td>`).join("")}</tr>
-                  `).join("")}
-                </tbody>
-              </table>
-            </section>
-          `;
-        }
+  if (!sections.length) {
+    container.innerHTML = emptyState("No hay secciones configuradas");
+    return;
+  }
 
-        if (section.type === "note") {
-          return `
-            <section class="viewer-section">
-              <h2>${section.title || ""}</h2>
-              <div class="note-box">${section.text || ""}</div>
-            </section>
-          `;
-        }
+  container.innerHTML = sections.map(section => {
 
-        return "";
-      }).join("");
+    /* =========================
+       BULLET LIST
+    ========================= */
+
+    if (section.type === "bullets") {
+      return `
+        <section class="viewer-section">
+          <h2>${section.title || ""}</h2>
+          <ul class="bullet-list">
+            ${(section.items || []).map(i => `
+              <li>
+                <strong>${i.title || ""}</strong>
+                <p>${i.text || ""}</p>
+              </li>
+            `).join("")}
+          </ul>
+        </section>
+      `;
     }
+
+    /* =========================
+       TABLE
+    ========================= */
+
+    if (section.type === "table") {
+      return `
+        <section class="viewer-section">
+          <h2>${section.title || ""}</h2>
+          <table class="viewer-table">
+            <thead>
+              <tr>${(section.columns || []).map(c => `<th>${c}</th>`).join("")}</tr>
+            </thead>
+            <tbody>
+              ${(section.rows || []).map(r => `
+                <tr>${r.map(c => `<td>${c}</td>`).join("")}</tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </section>
+      `;
+    }
+
+    /* =========================
+       NOTE
+    ========================= */
+
+    if (section.type === "note") {
+      return `
+        <section class="viewer-section">
+          <h2>${section.title || ""}</h2>
+          <div class="note-box">${section.text || ""}</div>
+        </section>
+      `;
+    }
+
+    /* =========================
+       FINANCIAL CARDS
+    ========================= */
+
+    if (section.type === "financial_cards") {
+
+      return `
+        <section class="viewer-section">
+          <h2>${section.title}</h2>
+          <div class="kpi-grid">
+            ${(section.cards || []).map(card => `
+              <div class="meta-card">
+                <strong>${card.title}</strong>
+                ${(card.rows || []).map(r => `
+                  <div class="meta-sub"><strong>${r.label}:</strong> ${r.value}</div>
+                `).join("")}
+              </div>
+            `).join("")}
+          </div>
+        </section>
+      `;
+    }
+
+    /* =========================
+       SCOPE CARDS
+    ========================= */
+
+    if (section.type === "scope_cards") {
+
+      return `
+        <section class="viewer-section">
+          <h2>${section.title}</h2>
+          <div class="kpi-grid">
+            ${(section.cards || []).map(card => `
+              <div class="meta-card">
+                <strong>${card.title}</strong>
+                <ul class="bullet-list">
+                  ${(card.items || []).map(i => `<li>${i}</li>`).join("")}
+                </ul>
+              </div>
+            `).join("")}
+          </div>
+        </section>
+      `;
+    }
+
+    /* =========================
+       TIMELINE
+    ========================= */
+
+    if (section.type === "timeline") {
+
+      return `
+        <section class="viewer-section">
+          <h2>${section.title}</h2>
+          <ul class="bullet-list">
+            ${(section.items || []).map(i => `
+              <li>
+                <strong>${i.title}</strong>
+                <p>${i.duration || ""}</p>
+                <p>${i.text || ""}</p>
+                ${i.html ? `<p>${i.html}</p>` : ""}
+              </li>
+            `).join("")}
+          </ul>
+        </section>
+      `;
+    }
+
+    /* =========================
+       TEAM
+    ========================= */
+
+    if (section.type === "team_cards") {
+
+      return `
+        <section class="viewer-section">
+          <h2>${section.title}</h2>
+          <div class="kpi-grid">
+            ${(section.cards || []).map(card => `
+              <div class="meta-card">
+                <div class="meta-label">${card.role}</div>
+                <div class="meta-value">${card.name}</div>
+              </div>
+            `).join("")}
+          </div>
+        </section>
+      `;
+    }
+
+    /* =========================
+       RISKS
+    ========================= */
+
+    if (section.type === "risk_cards") {
+
+      return `
+        <section class="viewer-section">
+          <h2>${section.title}</h2>
+          <ul class="bullet-list">
+            ${(section.cards || []).map(card => `
+              <li>
+                <strong>${card.title}</strong>
+                <p>${card.text}</p>
+              </li>
+            `).join("")}
+          </ul>
+        </section>
+      `;
+    }
+
+    return "";
+
+  }).join("");
+}
 
    function render(data) {
   const loader = document.getElementById("loader");
