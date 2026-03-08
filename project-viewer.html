@@ -131,6 +131,10 @@
 
   netlifyIdentity.on("init", () => {
     bootstrap();
+    renderHero(data.hero);
+renderMeta(data.meta);
+renderKpis(data.kpis);
+renderSections(data.sections);
   });
 
   netlifyIdentity.on("login", () => {
@@ -143,6 +147,105 @@
     sessionStorage.removeItem("identity_prompt_open");
     location.href = "/login.html";
   });
+
+  function renderHero(hero) {
+
+document.getElementById("pName").innerText = hero?.title || "";
+document.getElementById("pSubtitle").innerText = hero?.subtitle || "";
+
+if(hero?.badge){
+document.getElementById("pBadge").innerText = hero.badge;
+}
+
+}
+
+  function renderMeta(meta){
+
+const el = document.getElementById("metaGrid");
+
+el.innerHTML = meta.map(m=>`
+<div class="meta-card">
+<div class="meta-label">${m.label}</div>
+<div class="meta-value">${m.value}</div>
+${m.sub ? `<div class="meta-sub">${m.sub}</div>`:''}
+</div>
+`).join('');
+
+}
+
+  function renderKpis(kpis){
+
+const el = document.getElementById("kpiGrid");
+
+el.innerHTML = kpis.map(k=>`
+<div class="kpi-card">
+<div class="kpi-label">${k.label}</div>
+<div class="kpi-value">${k.value}</div>
+</div>
+`).join('');
+
+}
+  function renderSections(sections){
+
+const container = document.getElementById("sections");
+
+container.innerHTML = sections.map(section=>{
+
+if(section.type==="bullets"){
+
+return `
+<section class="viewer-section">
+<h2>${section.title}</h2>
+
+<ul class="bullet-list">
+${section.items.map(i=>`
+<li>
+<strong>${i.title}</strong>
+<p>${i.text}</p>
+</li>
+`).join("")}
+</ul>
+
+</section>
+`;
+
+}
+
+if(section.type==="table"){
+
+return `
+<section class="viewer-section">
+
+<h2>${section.title}</h2>
+
+<table class="viewer-table">
+
+<thead>
+<tr>
+${section.columns.map(c=>`<th>${c}</th>`).join("")}
+</tr>
+</thead>
+
+<tbody>
+${section.rows.map(r=>`
+<tr>
+${r.map(c=>`<td>${c}</td>`).join("")}
+</tr>
+`).join("")}
+</tbody>
+
+</table>
+
+</section>
+`;
+
+}
+
+}).join("");
+
+}
+
+  
 </script>
 </body>
 </html>
