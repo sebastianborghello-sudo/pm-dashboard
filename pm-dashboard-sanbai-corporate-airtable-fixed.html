@@ -56,12 +56,47 @@
     .gantt-container { overflow-x: auto; margin-top: 15px; }
     .gantt-chart { min-width: 800px; }
     .gantt-header { display: flex; background: #f7fafc; padding: 10px; border-radius: 6px; margin-bottom: 5px; font-weight: 600; font-size: 0.85em; }
-    .gantt-task-name { width: 200px; flex-shrink: 0; }
-    .gantt-timeline { flex: 1; display: flex; position: relative; }
+.gantt-task-name {
+  width: 240px;
+  flex-shrink: 0;
+  font-size: 13px;
+  line-height: 1.25;
+  padding-right: 12px;
+}    .gantt-timeline { flex: 1; display: flex; position: relative; }
     .gantt-row { display: flex; align-items: center; padding: 8px 10px; border-bottom: 1px solid #e2e8f0; }
     .gantt-row:hover { background: #f7fafc; }
-    .gantt-bar { height: 24px; border-radius: 4px; position: absolute; display: flex; align-items: center; padding: 0 8px; font-size: 0.75em; color: white; font-weight: 600; white-space: nowrap; }
+.gantt-bar {
+  height: 24px;
+  border-radius: 4px;
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 8px;
+  font-size: 0.75em;
+  color: white;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: visible;
+  min-width: 22px;
+}
 
+.gantt-bar-label {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+  pointer-events: none;
+}
+
+.gantt-bar.outside-label .gantt-bar-label {
+  left: calc(100% + 6px);
+  right: auto;
+  color: #2d3748;
+}
     .right-panel { display: flex; flex-direction: column; gap: 20px; }
     .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
     .metric-card { background: linear-gradient(135deg, #003d82 0%, #00529e 100%); color: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0, 61, 130, 0.3); }
@@ -162,8 +197,10 @@
 }
 
 /* si el panel se achica mucho, apilar */
-@media (max-width: 520px){
-  #cashSummary{ grid-template-columns: 1fr; }
+@media (max-width: 900px){
+  #cashSummary{
+    grid-template-columns: 1fr;
+  }
 }
 
     @page {
@@ -280,6 +317,32 @@ body.pdf-mode .gantt-container {
 #cashTimeline .task-item{
   width: 100%;
   max-width: 100%;
+}
+
+    #cashSummary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+#cashSummary .metric-card {
+  min-width: 0;
+  padding: 12px !important;
+  overflow: hidden;
+}
+
+#cashSummary .metric-label {
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+#cashSummary .metric-value {
+  font-size: clamp(14px, 1.3vw, 18px) !important;
+  line-height: 1.15;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  margin-top: 6px;
 }
 
   
@@ -796,17 +859,21 @@ function renderCashflow() {
   const net = totalIn - totalOut;
   const cur = (items.find(x => x.currency)?.currency) || "USD";
 
-  sum.innerHTML = `
-    <div class="metric-card metric-ok" style="padding:12px;">
-      <div class="metric-label">Cobros</div><div class="metric-value" style="font-size:18px;">${moneyFmt(totalIn, cur)}</div>
-    </div>
-    
-    <div class="metric-card metric-bad" style="padding:12px;">
-        <div class="metric-label">Pagos</div><div class="metric-value" style="font-size:18px;">${moneyFmt(totalOut, cur)}</div>
-    </div>
-    <div class="metric-card metric-accent" style="padding:12px;">
-      <div class="metric-label">Neto</div><div class="metric-value" style="font-size:18px;">${moneyFmt(net, cur)}</div></span>
-    </div>
+ sum.innerHTML = `
+  <div class="metric-card metric-ok">
+    <div class="metric-label">Cobros</div>
+    <div class="metric-value">${moneyFmt(totalIn, cur)}</div>
+  </div>
+
+  <div class="metric-card metric-bad">
+    <div class="metric-label">Pagos</div>
+    <div class="metric-value">${moneyFmt(totalOut, cur)}</div>
+  </div>
+
+  <div class="metric-card metric-accent">
+    <div class="metric-label">Neto</div>
+    <div class="metric-value">${moneyFmt(net, cur)}</div>
+  </div>
 `;
   tl.innerHTML = items.map(it => {
     const badge = (it.type || "").toLowerCase() === "pago"
@@ -1063,15 +1130,17 @@ function renderGantt() {
     const left = (daysFromStart / totalDays) * 100;
     const width = (taskDuration / totalDays) * 100;
 
-    html += `<div class="gantt-row">
-      <div class="gantt-task-name">${escapeHtml(task.name || "")}</div>
-      <div class="gantt-timeline">
-        <div class="gantt-bar" style="left:${left}%; width:${width}%; background:${colors[task.status] || "#777"};">
-          ${Number(task.progress || 0)}%
-        </div>
-      </div>
-    </div>`;
-  });
+  const progressText = `${Number(task.progress || 0)}%`;
+const outsideClass = width < 8 ? "outside-label" : "";
+
+html += `<div class="gantt-row">
+  <div class="gantt-task-name">${escapeHtml(task.name || "")}</div>
+  <div class="gantt-timeline">
+    <div class="gantt-bar ${outsideClass}" style="left:${left}%; width:${width}%; background:${colors[task.status] || "#777"};">
+      <span class="gantt-bar-label">${progressText}</span>
+    </div>
+  </div>
+</div>`;
 
   html += "</div>";
   container.innerHTML = html;
