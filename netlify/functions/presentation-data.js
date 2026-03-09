@@ -51,14 +51,20 @@ exports.handler = async (event, context) => {
     return authError(500, "Global_Stats JSON inválido");
   }
 
+  // Traer mapa Projects: recordId -> projectKey
+  const { projectIdToKey } = await Airtable.buildProjectMaps();
+
   // Traer tareas reales
-  const all = await Airtable.fetchAll("Tasks");
+  const allTasks = await Airtable.fetchAll("Tasks");
 
   const progressByProject = {};
 
-  for (const t of all) {
+  for (const t of allTasks) {
     const f = t.fields || {};
-    const projectKey = f["Project Key"] || f["Project_Key"] || f["projectKey"] || "";
+
+    // Campo linked record de Airtable
+    const linkedProject = Array.isArray(f["Project"]) ? f["Project"][0] : f["Project"];
+    const projectKey = projectIdToKey[linkedProject];
 
     if (!projectKey) continue;
 
@@ -80,6 +86,32 @@ exports.handler = async (event, context) => {
       progressByProject[projectKey].completedTasks += 1;
     }
   }
+
+  const enrichedPortfolio = (data.portfolio_2026 || []).map(p => {
+    const stats = progressByProject[p.link] || {
+      totalTasks: 0,
+      completedTasks: 0,
+      totalProgress: 0
+    };
+
+    const avgProgress = stats.totalTasks > 0
+      ? Math.round(stats.totalProgress / stats.totalTasks)
+      : 0;
+
+    return {
+      ...p,
+      progress: avgProgress,
+      totalTasks: stats.totalTasks,
+      completedTasks: stats.completedTasks
+    };
+  });
+
+  return json(200, {
+    ok: true,
+    ...data,
+    portfolio_2026: enrichedPortfolio
+  });
+}
 
   const enrichedPortfolio = (data.portfolio_2026 || []).map(p => {
     const stats = progressByProject[p.link] || {
