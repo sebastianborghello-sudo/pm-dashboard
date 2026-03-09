@@ -555,6 +555,13 @@ body.pdf-mode .gantt-container {
 const API_BASE = "/.netlify/functions/airtable";
 const STORAGE_KEY = "pm_projects_v1";
 
+function getProjectFromURL(){
+
+const params = new URLSearchParams(window.location.search);
+return params.get("project");
+
+}
+
 // Map projectKey -> info page
 const PROJECT_INFO_LINKS = {
   macro_lan: "https://sanbai-pm-dashboard.netlify.app/proyecto-macro-dashboard-sanbai.html",
@@ -916,6 +923,15 @@ function renderProjectSelector() {
     currentTab = "all";
     document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
     const allTab = document.querySelector('.tab[data-tab="all"]');
+    const projectFromURL = getProjectFromURL();
+
+if(projectFromURL){
+
+selector.value = projectFromURL;
+
+selector.dispatchEvent(new Event("change"));
+
+}
     if (allTab) allTab.classList.add("active");
     updateProjectInfoButton(currentProjectKey);
     renderAll();
