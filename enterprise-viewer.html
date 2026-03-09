@@ -713,29 +713,26 @@ function renderPortfolio(projects=[]){
 
 const el = document.getElementById("portfolio");
 
-if(!projects.length){
-  el.innerHTML="<p class='muted'>Sin proyectos</p>";
-  return;
-}
-
 el.innerHTML = projects.map(p=>`
 
-<div class="project-row"
+<div class="project-row">
+
+<div class="project-info"
 onclick="window.location.href='/project-viewer.html?key=${p.link}'">
 
-<div class="project-info">
-
 <h4>${p.name}</h4>
-
 <p>${p.status}</p>
 
 </div>
 
-<div class="project-value">
+<div class="project-actions">
 
-${p.value}
+<button class="btn-pm"
+onclick="event.stopPropagation(); window.location.href='/pm-dashboard-sanbai-corporate-airtable-fixed.html?project=${p.link}'">
 
-<span class="bucket">${p.bucket}</span>
+PM
+
+</button>
 
 </div>
 
