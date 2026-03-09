@@ -43,13 +43,14 @@ exports.handler = async (event, context) => {
     return authError(404, "Enterprise config not found");
   }
 
-  let data = {};
-  try {
-    data = JSON.parse(record.fields?.["Global_Stats"] || "{}");
-  } catch (e) {
-    console.error("Global_Stats JSON inválido:", e);
-    return authError(500, "Global_Stats JSON inválido");
-  }
+ let data = {};
+
+try {
+  data = JSON.parse(record.fields?.["Global_Stats"] || "{}");
+} catch (e) {
+  console.error("Global_Stats JSON inválido:", e);
+  return authError(500, "Global_Stats JSON inválido");
+}
 
   // Traer mapa Projects: recordId -> projectKey
   const { projectIdToKey } = await Airtable.buildProjectMaps();
