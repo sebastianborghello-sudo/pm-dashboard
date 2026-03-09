@@ -34,26 +34,7 @@ exports.handler = async (event, context) => {
     // ENTERPRISE VIEWER
     // Lee desde Enterprise_Config.Global_Stats
     // ==========================
-    if (type === "enterprise") {
-  const url = Airtable.baseApi("Enterprise_Config");
-  const res = await Airtable.airtableReq("GET", url);
-  const record = res.records?.[0];
 
-  if (!record) {
-    return authError(404, "Enterprise config not found");
-  }
-
- let data = {};
-
-try {
-  data = JSON.parse(record.fields?.["Global_Stats"] || "{}");
-} catch (e) {
-  console.error("Global_Stats JSON inválido:", e);
-  return authError(500, "Global_Stats JSON inválido");
-}
-
-  // Traer mapa Projects: recordId -> projectKey
-  const { projectIdToKey } = await Airtable.buildProjectMaps();
 
   
 
