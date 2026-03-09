@@ -88,23 +88,78 @@ try {
     }
   }
 
+if (type === "enterprise") {
+
+  const url = Airtable.baseApi("Enterprise_Config");
+  const res = await Airtable.airtableReq("GET", url);
+  const record = res.records?.[0];
+
+  if (!record) {
+    return authError(404, "Enterprise config not found");
+  }
+
+  let data = {};
+
+  try {
+    data = JSON.parse(record.fields?.["Global_Stats"] || "{}");
+  } catch (e) {
+    console.error("Global_Stats JSON inválido:", e);
+    return authError(500, "Global_Stats JSON inválido");
+  }
+
+  // mapa Projects
+  const { projectIdToKey } = await Airtable.buildProjectMaps();
+
+  // traer tareas
+  const allTasks = await Airtable.fetchAll("Tasks");
+
+  const progressByProject = {};
+
+  for (const t of allTasks) {
+
+    const f = t.fields || {};
+
+    const linkedProject =
+      Array.isArray(f["Project"]) ? f["Project"][0] : f["Project"];
+
+    const projectKey = projectIdToKey[linkedProject];
+
+    if (!projectKey) continue;
+
+    if (!progressByProject[projectKey]) {
+      progressByProject[projectKey] = {
+        totalTasks: 0,
+        completedTasks: 0
+      };
+    }
+
+    progressByProject[projectKey].totalTasks += 1;
+
+    const status = String(f["Status"] || "").toLowerCase();
+
+    if (status === "completed" || status === "done") {
+      progressByProject[projectKey].completedTasks += 1;
+    }
+  }
+
   const enrichedPortfolio = (data.portfolio_2026 || []).map(p => {
+
     const stats = progressByProject[p.link] || {
       totalTasks: 0,
-      completedTasks: 0,
-      totalProgress: 0
+      completedTasks: 0
     };
 
-    const avgProgress = stats.totalTasks > 0
-      ? Math.round(stats.totalProgress / stats.totalTasks)
+    const progress = stats.totalTasks > 0
+      ? Math.round((stats.completedTasks / stats.totalTasks) * 100)
       : 0;
 
     return {
       ...p,
-      progress: avgProgress,
+      progress,
       totalTasks: stats.totalTasks,
       completedTasks: stats.completedTasks
     };
+
   });
 
   return json(200, {
@@ -112,32 +167,7 @@ try {
     ...data,
     portfolio_2026: enrichedPortfolio
   });
-}
 
-  const enrichedPortfolio = (data.portfolio_2026 || []).map(p => {
-    const stats = progressByProject[p.link] || {
-      totalTasks: 0,
-      completedTasks: 0,
-      totalProgress: 0
-    };
-
-    const avgProgress = stats.totalTasks > 0
-      ? Math.round(stats.totalProgress / stats.totalTasks)
-      : 0;
-
-    return {
-      ...p,
-      progress: avgProgress,
-      totalTasks: stats.totalTasks,
-      completedTasks: stats.completedTasks
-    };
-  });
-
-  return json(200, {
-    ok: true,
-    ...data,
-    portfolio_2026: enrichedPortfolio
-  });
 }
 
     // ==========================
