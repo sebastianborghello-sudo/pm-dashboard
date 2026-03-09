@@ -485,6 +485,62 @@
     @media (max-width: 1100px){
       .hero,.grid-3,.grid-2{grid-template-columns:1fr}
     }
+    .project-actions{
+  margin-top:10px;
+}
+
+.btn-pm{
+  background:#1E293B;
+  border:1px solid rgba(255,255,255,.15);
+  color:#fff;
+  padding:7px 10px;
+  border-radius:8px;
+  font-size:11px;
+  font-weight:800;
+  cursor:pointer;
+}
+
+.btn-pm:hover{
+  border-color:rgba(255,255,255,.28);
+}
+
+.project-progress-wrap{
+  margin-top:10px;
+}
+
+.project-progress-meta{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  font-size:12px;
+  color:rgba(255,255,255,.72);
+  margin-bottom:6px;
+}
+
+.project-progress-meta strong{
+  color:#fff;
+}
+
+.project-progress-bar{
+  height:10px;
+  border-radius:999px;
+  background:rgba(255,255,255,.10);
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.10);
+}
+
+.project-progress-fill{
+  height:100%;
+  border-radius:999px;
+  background:linear-gradient(90deg, var(--orange) 0%, var(--orange2) 100%);
+}
+
+.project-progress-note{
+  margin-top:6px;
+  font-size:11px;
+  color:rgba(255,255,255,.58);
+}
   </style>
 </head>
 <body>
@@ -709,39 +765,49 @@
       `).join("");
     }
 
-function renderPortfolio(projects=[]){
+function renderPortfolio(projects = []) {
+  const el = document.getElementById("portfolio");
 
-const el = document.getElementById("portfolio");
+  if (!projects.length) {
+    el.innerHTML = emptyState("Sin proyectos");
+    return;
+  }
 
-el.innerHTML = projects.map(p=>`
+  el.innerHTML = projects.map(p => `
+    <div class="project-row">
+      <div class="project-info"
+           onclick="window.location.href='/project-viewer.html?key=${encodeURIComponent(p.link || "")}'">
+        <h4>${p.name || ""}</h4>
+        <p>${p.status || ""}</p>
 
-<div class="project-row">
+        <div class="project-progress-wrap">
+          <div class="project-progress-meta">
+            <span>Progreso real</span>
+            <strong>${p.progress ?? 0}%</strong>
+          </div>
+          <div class="project-progress-bar">
+            <div class="project-progress-fill" style="width:${p.progress ?? 0}%"></div>
+          </div>
+          <div class="project-progress-note">
+            ${p.completedTasks ?? 0}/${p.totalTasks ?? 0} tareas completas
+          </div>
+        </div>
+      </div>
 
-<div class="project-info"
-onclick="window.location.href='/project-viewer.html?key=${p.link}'">
+      <div class="project-side">
+        <div class="value">${p.value || ""}</div>
+        <span class="bucket">${p.bucket || ""}</span>
 
-<h4>${p.name}</h4>
-<p>${p.status}</p>
-
-</div>
-
-<div class="project-actions">
-
-<button class="btn-pm"
-onclick="event.stopPropagation(); window.location.href='/pm-dashboard-sanbai-corporate-airtable-fixed.html?project=${p.link}'">
-
-PM
-
-</button>
-
-</div>
-
-</div>
-
-`).join("");
-
+        <div class="project-actions">
+          <button class="btn-pm"
+            onclick="event.stopPropagation(); window.location.href='/pm-dashboard-sanbai-corporate-airtable-fixed.html?project=${encodeURIComponent(p.link || "")}'">
+            <i class="fa-solid fa-list-check"></i> PM
+          </button>
+        </div>
+      </div>
+    </div>
+  `).join("");
 }
-
 function renderOpportunities2025(list = []) {
   const el = document.getElementById("opportunities2025");
 
