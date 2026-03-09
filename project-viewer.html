@@ -276,6 +276,30 @@
       font-size:11.5px;
       font-weight:900;
     }
+    .architecture-gallery{
+  display:grid;
+  gap:14px;
+}
+
+.architecture-item{
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:#fcfcfd;
+  padding:12px;
+}
+
+.architecture-image{
+  width:100%;
+  height:auto;
+  display:block;
+  border-radius:10px;
+}
+
+.architecture-caption{
+  margin-top:8px;
+  font-size:12px;
+  color:var(--muted);
+}
 
     .viewer-table tr:last-child td{border-bottom:none}
 
@@ -576,6 +600,37 @@
         </section>
       `;
     }
+
+    if (section.type === "architecture_figure") {
+  return `
+    <section class="viewer-section">
+      <h2>${section.title || ""}</h2>
+
+      <div class="meta-card" style="margin-bottom:14px;">
+        <div class="meta-label">${section.question || "¿Qué resuelve este proyecto?"}</div>
+        <div class="meta-sub" style="margin-top:8px;">
+          ${section.answer || ""}
+        </div>
+      </div>
+
+      <div class="meta-card" style="margin-bottom:14px;">
+        <div class="meta-label">${section.scope_label || "Alcance típico"}</div>
+        <div class="meta-sub" style="margin-top:8px;">
+          ${section.scope_text || ""}
+        </div>
+      </div>
+
+      <div class="architecture-gallery">
+        ${(section.images || []).map(img => `
+          <div class="architecture-item">
+            <img src="${img.src}" alt="${img.caption || "Diagrama"}" class="architecture-image">
+            ${img.caption ? `<div class="architecture-caption">${img.caption}</div>` : ""}
+          </div>
+        `).join("")}
+      </div>
+    </section>
+  `;
+}
 
     /* =========================
        TIMELINE
