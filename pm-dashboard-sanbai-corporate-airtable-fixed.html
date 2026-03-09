@@ -1118,33 +1118,46 @@ function renderGantt() {
     html += `<div style="flex:${flex}; text-align:center;">${label}</div>`;
   });
 
-  html += "</div></div>";
+  html += '</div></div>';
 
-  const colors = { pending: "#e89e3c", "in-progress": "#ff7a00", completed: "#48bb78", blocked: "#f56565" };
+  const colors = {
+    pending: "#e89e3c",
+    "in-progress": "#ff7a00",
+    completed: "#48bb78",
+    blocked: "#f56565"
+  };
+
   sortTasksByDate(tasksAll).forEach(task => {
     if (!task.startDate || !task.endDate) return;
+
     const taskStart = parseISODateUTC(task.startDate);
     const taskEnd = parseISODateUTC(task.endDate);
+
     const daysFromStart = daysBetweenUTC(startDate, taskStart);
     const taskDuration = Math.max(1, daysBetweenUTC(taskStart, taskEnd));
     const left = (daysFromStart / totalDays) * 100;
     const width = (taskDuration / totalDays) * 100;
 
-  const progressText = `${Number(task.progress || 0)}%`;
-const outsideClass = width < 8 ? "outside-label" : "";
+    const progressText = `${Number(task.progress || 0)}%`;
+    const outsideClass = width < 8 ? "outside-label" : "";
 
-html += `<div class="gantt-row">
-  <div class="gantt-task-name">${escapeHtml(task.name || "")}</div>
-  <div class="gantt-timeline">
-    <div class="gantt-bar ${outsideClass}" style="left:${left}%; width:${width}%; background:${colors[task.status] || "#777"};">
-      <span class="gantt-bar-label">${progressText}</span>
-    </div>
-  </div>
-</div>`;
+    html += `
+      <div class="gantt-row">
+        <div class="gantt-task-name">${escapeHtml(task.name || "")}</div>
+        <div class="gantt-timeline">
+          <div class="gantt-bar ${outsideClass}" 
+               style="left:${left}%; width:${width}%; background:${colors[task.status] || "#777"};">
+            <span class="gantt-bar-label">${progressText}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  });
 
-  html += "</div>";
+  html += '</div>';
   container.innerHTML = html;
 }
+
 
 function renderTeam() {
   const container = $("teamList");
