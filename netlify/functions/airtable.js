@@ -233,6 +233,117 @@ exports.handler = async (event, context) => {
 
       return json(200, { ok: true, projects });
     }
+        // --- RUTA: POST /airtable/tasks ---
+    if (event.httpMethod === "POST" && subpath === "tasks") {
+      const body = JSON.parse(event.body || "{}");
+      const { projectKey, name, description, owner, status, progress, startDate, endDate } = body;
+
+      const { projectKeyToId } = await buildProjectMaps();
+      const projectId = projectKeyToId[projectKey];
+      if (!projectId) return json(400, { ok: false, error: "Project key inválido" });
+
+      const payload = {
+        fields: {
+          "Project": [projectId],
+          "Name": name || "",
+          "Description": description || "",
+          "Owner": owner || "",
+          "Status": status || "pending",
+          "Progress": Number(progress || 0),
+          "Start Date": startDate || null,
+          "End Date": endDate || null
+        }
+      };
+
+      const record = await airtableReq("POST", baseApi(TABLE_TASKS), payload);
+      return json(200, { ok: true, record });
+    }
+
+    // --- RUTA: PATCH /airtable/tasks/:id ---
+    if (event.httpMethod === "PATCH" && subpath.startsWith("tasks/")) {
+      const recordId = subpath.split("/")[1];
+      const body = JSON.parse(event.body || "{}");
+
+      const payload = {
+        fields: {
+          "Name": body.name || "",
+          "Description": body.description || "",
+          "Owner": body.owner || "",
+          "Status": body.status || "pending",
+          "Progress": Number(body.progress || 0),
+          "Start Date": body.startDate || null,
+          "End Date": body.endDate || null
+        }
+      };
+
+      const record = await airtableReq("PATCH", `${baseApi(TABLE_TASKS)}/${recordId}`, payload);
+      return json(200, { ok: true, record });
+    }
+
+    // --- RUTA: DELETE /airtable/tasks/:id ---
+    if (event.httpMethod === "DELETE" && subpath.startsWith("tasks/")) {
+      const recordId = subpath.split("/")[1];
+      await airtableReq("DELETE", `${baseApi(TABLE_TASKS)}/${recordId}`);
+      return json(200, { ok: true, deleted: true });
+    }
+
+    // --- RUTA: POST /airtable/cashflow ---
+    if (event.httpMethod === "POST" && subpath === "cashflow") {
+      const body = JSON.parse(event.body || "{}");
+      const { projectKey, concept, date, type, amount, currency, party, status, notes, relatedTask } = body;
+
+      const { projectKeyToId } = await buildProjectMaps();
+      const projectId = projectKeyToId[projectKey];
+      if (!projectId) return json(400, { ok: false, error: "Project key inválido" });
+
+      const payload = {
+        fields: {
+          "Project": [projectId],
+          "Concept": concept || "",
+          "Date": date || null,
+          "Type": type || "",
+          "Amount": Number(amount || 0),
+          "Currency": currency || "USD",
+          "Party": party || "",
+          "Status": status || "",
+          "Notes": notes || "",
+          "Related Task": relatedTask || ""
+        }
+      };
+
+      const record = await airtableReq("POST", baseApi(TABLE_CASHFLOW), payload);
+      return json(200, { ok: true, record });
+    }
+
+    // --- RUTA: PATCH /airtable/cashflow/:id ---
+    if (event.httpMethod === "PATCH" && subpath.startsWith("cashflow/")) {
+      const recordId = subpath.split("/")[1];
+      const body = JSON.parse(event.body || "{}");
+
+      const payload = {
+        fields: {
+          "Concept": body.concept || "",
+          "Date": body.date || null,
+          "Type": body.type || "",
+          "Amount": Number(body.amount || 0),
+          "Currency": body.currency || "USD",
+          "Party": body.party || "",
+          "Status": body.status || "",
+          "Notes": body.notes || "",
+          "Related Task": body.relatedTask || ""
+        }
+      };
+
+      const record = await airtableReq("PATCH", `${baseApi(TABLE_CASHFLOW)}/${recordId}`, payload);
+      return json(200, { ok: true, record });
+    }
+
+    // --- RUTA: DELETE /airtable/cashflow/:id ---
+    if (event.httpMethod === "DELETE" && subpath.startsWith("cashflow/")) {
+      const recordId = subpath.split("/")[1];
+      await airtableReq("DELETE", `${baseApi(TABLE_CASHFLOW)}/${recordId}`);
+      return json(200, { ok: true, deleted: true });
+    }
 
     return json(404, { error: "Not found" });
   } catch (e) {
