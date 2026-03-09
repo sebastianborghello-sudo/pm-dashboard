@@ -1449,6 +1449,19 @@ function wireButtons() {
     btnExportPdf.addEventListener("click", () => exportPDF());
   }
 }
+  function getProjectFromURL() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("project");
+}
+  const projectFromURL = getProjectFromURL();
+
+if (projectFromURL) {
+  const selector = document.getElementById("projectSelector");
+  if (selector) {
+    selector.value = projectFromURL;
+    selector.dispatchEvent(new Event("change"));
+  }
+}
 
 // Llamarlo después de que se renderiza el DOM (y después de init/boot si hace falta)
 document.addEventListener("DOMContentLoaded", () => {
