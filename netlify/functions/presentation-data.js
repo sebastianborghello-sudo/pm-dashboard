@@ -55,38 +55,7 @@ try {
   // Traer mapa Projects: recordId -> projectKey
   const { projectIdToKey } = await Airtable.buildProjectMaps();
 
-  // Traer tareas reales
-  const allTasks = await Airtable.fetchAll("Tasks");
-
-  const progressByProject = {};
-
-  for (const t of allTasks) {
-    const f = t.fields || {};
-
-    // Campo linked record de Airtable
-    const linkedProject = Array.isArray(f["Project"]) ? f["Project"][0] : f["Project"];
-    const projectKey = projectIdToKey[linkedProject];
-
-    if (!projectKey) continue;
-
-    if (!progressByProject[projectKey]) {
-      progressByProject[projectKey] = {
-        totalTasks: 0,
-        completedTasks: 0,
-        totalProgress: 0
-      };
-    }
-
-    progressByProject[projectKey].totalTasks += 1;
-
-    const progress = Number(f["Progress"] ?? 0);
-    progressByProject[projectKey].totalProgress += progress;
-
-    const status = String(f["Status"] || "").toLowerCase();
-    if (status === "completed" || status === "done" || progress >= 100) {
-      progressByProject[projectKey].completedTasks += 1;
-    }
-  }
+  
 
 if (type === "enterprise") {
 
