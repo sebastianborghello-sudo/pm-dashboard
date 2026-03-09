@@ -925,13 +925,7 @@ function renderProjectSelector() {
     const allTab = document.querySelector('.tab[data-tab="all"]');
     const projectFromURL = getProjectFromURL();
 
-if(projectFromURL){
 
-selector.value = projectFromURL;
-
-selector.dispatchEvent(new Event("change"));
-
-}
     if (allTab) allTab.classList.add("active");
     updateProjectInfoButton(currentProjectKey);
     renderAll();
