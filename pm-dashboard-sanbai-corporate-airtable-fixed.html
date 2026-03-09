@@ -1276,9 +1276,14 @@ async function startApp() {
   }
 
   const keys = Object.keys(projects);
+  const projectFromURL = getProjectFromURL();
+
   if (!keys.length) {
     currentProjectKey = null;
-    currentProject = { meta: { name: "Sin proyectos", subtitle: "", statusLabel: "" }, tasks: [], team: [], critical: [] };
+    currentProject = { meta: { name: "Sin proyectos", subtitle: "", statusLabel: "" }, tasks: [], team: [], critical: [], cashflow: [] };
+  } else if (projectFromURL && projects[projectFromURL]) {
+    currentProjectKey = projectFromURL;
+    currentProject = projects[currentProjectKey];
   } else {
     currentProjectKey = keys[0];
     currentProject = projects[currentProjectKey];
@@ -1447,13 +1452,7 @@ function wireButtons() {
 }
   const projectFromURL = getProjectFromURL();
 
-if (projectFromURL) {
-  const selector = document.getElementById("projectSelector");
-  if (selector) {
-    selector.value = projectFromURL;
-    selector.dispatchEvent(new Event("change"));
-  }
-}
+
 
 // Llamarlo después de que se renderiza el DOM (y después de init/boot si hace falta)
 document.addEventListener("DOMContentLoaded", () => {
