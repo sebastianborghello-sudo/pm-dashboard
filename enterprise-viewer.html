@@ -804,7 +804,7 @@ function renderOpportunities2025(list = []) {
   }
 
   el.innerHTML = list.map(o => `
-    <div class="opportunity-card">
+    <div class="opportunity-card"
                onclick="window.location.href='/project-viewer.html?key=${encodeURIComponent(p.link || "")}'">
 
       <h4>${o.name || ""}</h4>
